@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 
-import argparse
+import argparse, json
+
+def search(terms) -> None:
+    with open('data/movies.json', 'r') as f:
+        movieList = json.load(f)
+    matchCount = 0
+    for movie in movieList["movies"]:
+        if terms in movie["title"]:
+            matchCount += 1
+            print(f"{matchCount}. {movie['title']}")
+        if matchCount >= 5:
+            return
+    if matchCount == 0:
+        print(f"No results found.\n")
 
 
 def main() -> None:
@@ -15,7 +28,7 @@ def main() -> None:
     match args.command:
         case "search":
             print(f"Searching for: {args.query}\n")
-            pass
+            search(args.query)
         case _:
             parser.print_help()
 
