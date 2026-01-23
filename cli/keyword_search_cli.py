@@ -3,11 +3,12 @@
 import argparse, json
 
 def search(terms) -> None:
+    lt = terms.lower()
     with open('data/movies.json', 'r') as f:
         movieList = json.load(f)
     matchCount = 0
     for movie in movieList["movies"]:
-        if terms in movie["title"]:
+        if lt in movie["title"].lower():
             matchCount += 1
             print(f"{matchCount}. {movie['title']}")
         if matchCount >= 5:
