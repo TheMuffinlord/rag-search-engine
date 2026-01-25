@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 
-import argparse, json
+import argparse, json, string
+
+def stripper(term) -> str:
+    return term.translate(str.maketrans('','', string.punctuation)).lower()
 
 def search(terms) -> None:
-    lt = terms.lower()
+
     with open('data/movies.json', 'r') as f:
         movieList = json.load(f)
     matchCount = 0
     for movie in movieList["movies"]:
-        if lt in movie["title"].lower():
+        if stripper(terms) in stripper(movie["title"]):
             matchCount += 1
             print(f"{matchCount}. {movie['title']}")
         if matchCount >= 5:
             return
     if matchCount == 0:
         print(f"No results found.\n")
+
 
 
 def main() -> None:
