@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TO DO: SPLIT ALL THIS SHIT INTO REASONABLE FILES.
+
 import argparse, json, string
 
 DEFAULT_SEARCH_LIMIT = 5
@@ -10,11 +12,17 @@ def stripper(term: str):
 def separator(term: str):
     term = stripper(term)
     terms = term.split()
+    stopwords = load_stopwords()
     valid_terms = []
     for t in terms:
-        if t:
+        if t and t not in stopwords:
             valid_terms.append(t)
     return valid_terms
+
+def load_stopwords():
+    with open('data/stopwords.txt') as f:
+        wordList = f.read()
+    return wordList.splitlines()
 
 def load_movies():
     with open('data/movies.json', 'r') as f:
