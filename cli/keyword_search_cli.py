@@ -2,24 +2,45 @@
 
 import argparse, json, string
 
-def stripper(term) -> str:
+DEFAULT_SEARCH_LIMIT = 5
+
+def stripper(term: str):
     return term.translate(str.maketrans('','', string.punctuation)).lower()
 
-def search(terms) -> None:
+def separator(term: str):
+    term = stripper(term)
+    terms = term.split()
+    valid_terms = []
+    for t in terms:
+        if t:
+            valid_terms.append(t)
+    return valid_terms
 
+def load_movies():
     with open('data/movies.json', 'r') as f:
-        movieList = json.load(f)
-    matchCount = 0
-    for movie in movieList["movies"]:
-        if stripper(terms) in stripper(movie["title"]):
-            matchCount += 1
-            print(f"{matchCount}. {movie['title']}")
-        if matchCount >= 5:
-            return
-    if matchCount == 0:
-        print(f"No results found.\n")
+        movieList = json.load(f) 
+    return movieList["movies"]
 
+def search(terms: str, limit: int = DEFAULT_SEARCH_LIMIT):
+    movieList = load_movies()  
+    matchList = []
+    for movie in movieList:
+        query_tokens = separator(terms)
+        title_tokens = separator(movie["title"])
+        if match_tokens(query_tokens, title_tokens):
+            matchList.append(movie)
+            if len(matchList) >= limit:
+                break
+    return matchList
 
+def match_tokens(query_tokens, title_tokens):
+    for query in query_tokens:
+        for title in title_tokens:
+            if query in title:
+                return True
+    return False
+
+# the solution has the results being sent to its own function to display. probably smart. do that.
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -33,7 +54,9 @@ def main() -> None:
     match args.command:
         case "search":
             print(f"Searching for: {args.query}\n")
-            search(args.query)
+            results = search(args.query)
+            for i, result in enumerate(results, 1):
+                print(f"{i}. {result['title']}")
         case _:
             parser.print_help()
 
