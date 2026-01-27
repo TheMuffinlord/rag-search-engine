@@ -4,6 +4,8 @@
 
 import argparse, json, string
 
+from nltk.stem import PorterStemmer
+
 DEFAULT_SEARCH_LIMIT = 5
 
 def stripper(term: str):
@@ -16,8 +18,12 @@ def separator(term: str):
     valid_terms = []
     for t in terms:
         if t and t not in stopwords:
-            valid_terms.append(t)
+            valid_terms.append(stemmer(t))
     return valid_terms
+
+def stemmer(term: str):
+    stemmer = PorterStemmer()
+    return stemmer.stem(term)
 
 def load_stopwords():
     with open('data/stopwords.txt') as f:
