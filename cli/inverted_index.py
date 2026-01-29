@@ -22,6 +22,8 @@ class InvertedIndex:
     def get_documents(self, term: str):
         if term.lower() in self.index:
             return sorted(self.index[term.lower()])
+        else:
+            return set()
         
     def build(self):
         movieList = load_movies()
@@ -35,4 +37,15 @@ class InvertedIndex:
             pickle.dump(self.index, f)
         with open(self.docmap_path, 'wb') as f:
             pickle.dump(self.docmap, f)
+
+    def load(self):
+        if os.path.exists(self.index_path) and os.path.exists(self.docmap_path):
+            with open(self.index_path, 'rb') as f:
+                self.index = pickle.load(f)
+            with open(self.docmap_path, 'rb') as f:
+                self.docmap = pickle.load(f)
+        else:
+            print(f"debug: path missing. index: {os.path.exists(self.index_path)}; docmap: {os.path.exists(self.docmap_path)}")
+            raise Exception('uninitialized movie index')
+
             
