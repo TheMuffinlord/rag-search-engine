@@ -2,38 +2,14 @@
 
 # TO DO: SPLIT ALL THIS SHIT INTO REASONABLE FILES.
 
-import argparse, json, string
+import argparse
 
-from nltk.stem import PorterStemmer
+from word_actions import *
+from inverted_index import InvertedIndex
 
 DEFAULT_SEARCH_LIMIT = 5
 
-def stripper(term: str):
-    return term.translate(str.maketrans('','', string.punctuation)).lower()
 
-def separator(term: str):
-    term = stripper(term)
-    terms = term.split()
-    stopwords = load_stopwords()
-    valid_terms = []
-    for t in terms:
-        if t and t not in stopwords:
-            valid_terms.append(stemmer(t))
-    return valid_terms
-
-def stemmer(term: str):
-    stemmer = PorterStemmer()
-    return stemmer.stem(term)
-
-def load_stopwords():
-    with open('data/stopwords.txt') as f:
-        wordList = f.read()
-    return wordList.splitlines()
-
-def load_movies():
-    with open('data/movies.json', 'r') as f:
-        movieList = json.load(f) 
-    return movieList["movies"]
 
 def search(terms: str, limit: int = DEFAULT_SEARCH_LIMIT):
     movieList = load_movies()  
@@ -47,12 +23,7 @@ def search(terms: str, limit: int = DEFAULT_SEARCH_LIMIT):
                 break
     return matchList
 
-def match_tokens(query_tokens, title_tokens):
-    for query in query_tokens:
-        for title in title_tokens:
-            if query in title:
-                return True
-    return False
+
 
 # the solution has the results being sent to its own function to display. probably smart. do that.
 
@@ -63,6 +34,8 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    build_parser = subparsers.add_parser("build", help="Builds an index of available movies")
+
     args = parser.parse_args()
 
     match args.command:
@@ -71,6 +44,14 @@ def main() -> None:
             results = search(args.query)
             for i, result in enumerate(results, 1):
                 print(f"{i}. {result['title']}")
+        case "build":
+            print("Attempting to build a movie database...")
+            movieDB = InvertedIndex()
+            movieDB.build()
+            print("Movie database built. Attempting to save...")
+            movieDB.save()
+            print("Index saved!")
+            print(f"First document for token 'merida' = {movieDB.get_documents('merida')}")
         case _:
             parser.print_help()
 
