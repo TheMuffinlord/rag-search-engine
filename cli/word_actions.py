@@ -6,7 +6,7 @@ from constants import DATA_PATH, STOPWORDS_PATH
 def stripper(term: str):
     return term.translate(str.maketrans('','', string.punctuation)).lower()
 
-def separator(term: str):
+def separator(term: str) -> list: 
     term = stripper(term)
     terms = term.split()
     stopwords = load_stopwords()
