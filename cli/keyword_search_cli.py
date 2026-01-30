@@ -50,6 +50,10 @@ def main() -> None:
 
     build_parser = subparsers.add_parser("build", help="Builds an index of available movies")
     
+    tf_parser = subparsers.add_parser("tf", help="Returns the frequency of the requested term in a specific document ID.")
+    tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    tf_parser.add_argument("term", type=str, help="Search term. One word only please.")
+
     movieDB = InvertedIndex()
 
     args = parser.parse_args()
@@ -61,12 +65,21 @@ def main() -> None:
             for i, result in enumerate(results, 1):
                 print(f"{i}. {result['title']}")
         case "build":
-            print("Attempting to build a movie database...")
+            print("Attempting to build a movie database. This may take some time.")
             movieDB.build()
             print("Movie database built. Attempting to save...")
             movieDB.save()
             print("Index saved!")
             #print(f"First document for token 'merida' = {movieDB.get_documents('merida')}")
+        case "tf":
+            try:
+                movieDB.load()
+            except Exception as e:
+                print(f"Whoops! Got an error: {e}")
+            else:
+                print(f"Term frequency for {args.term} in document {args.doc_id}\n")
+                result = movieDB.get_tf(args.doc_id, args.term)
+                print(f"The term '{args.term}' appears {result} time(s).\n")
         case _:
             parser.print_help()
 

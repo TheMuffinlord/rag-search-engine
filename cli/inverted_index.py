@@ -1,7 +1,7 @@
 from word_actions import *
 from constants import CACHE_DIR
 
-import pickle, os
+import pickle, os, collections
 
 
 class InvertedIndex:
@@ -10,14 +10,19 @@ class InvertedIndex:
         self.docmap = {}
         self.index_path = os.path.join(CACHE_DIR, 'index.pkl')
         self.docmap_path = os.path.join(CACHE_DIR, 'docmap.pkl')
+        self.term_frequencies = {}
+        self.freq_path = os.path.join(CACHE_DIR, 'term_frequencies.pkl')
 
     def __add_document(self, doc_id, text):
         text = separator(text)
+        word_list = []
         for word in text:
+            word_list.append(word)
             if word not in self.index:
                 self.index[word] = {doc_id}
             else:
                 self.index[word].add(doc_id)
+        self.term_frequencies[doc_id] = collections.Counter(word_list)
 
     def get_documents(self, term: str):
         if term.lower() in self.index:
@@ -37,15 +42,25 @@ class InvertedIndex:
             pickle.dump(self.index, f)
         with open(self.docmap_path, 'wb') as f:
             pickle.dump(self.docmap, f)
+        with (open(self.freq_path, 'wb')) as f:
+            pickle.dump(self.term_frequencies, f)
 
     def load(self):
-        if os.path.exists(self.index_path) and os.path.exists(self.docmap_path):
+        if os.path.exists(self.index_path) and os.path.exists(self.docmap_path) and os.path.exists(self.freq_path):
             with open(self.index_path, 'rb') as f:
                 self.index = pickle.load(f)
             with open(self.docmap_path, 'rb') as f:
                 self.docmap = pickle.load(f)
+            with open(self.freq_path, 'rb') as f:
+                self.term_frequencies = pickle.load(f)         
         else:
             print(f"debug: path missing. index: {os.path.exists(self.index_path)}; docmap: {os.path.exists(self.docmap_path)}")
             raise Exception('uninitialized movie index')
 
-            
+    def get_tf(self, doc_id, term):
+        term = separator(term)
+        if len(term) > 1:
+            raise Exception('cannot find frequency for multiple terms')
+        term_counts = self.term_frequencies[doc_id]
+        return term_counts[term[0]]
+        
