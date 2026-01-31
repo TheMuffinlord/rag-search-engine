@@ -2,7 +2,7 @@
 
 # TO DO: SPLIT ALL THIS SHIT INTO REASONABLE FILES.
 
-import argparse
+import argparse, math
 
 from word_actions import *
 from inverted_index import InvertedIndex
@@ -37,6 +37,12 @@ def search(movieDB: InvertedIndex, terms: str, limit: int = DEFAULT_SEARCH_LIMIT
                     break
         return matchList
 
+def idf(movieDB: InvertedIndex, term: str):
+    
+    doc_count = len(movieDB.docmap)
+    match_count = len(movieDB.index[term])
+    return math.log((doc_count + 1) / (match_count + 1))
+    
 
 
 # the solution has the results being sent to its own function to display. probably smart. do that.
@@ -53,6 +59,9 @@ def main() -> None:
     tf_parser = subparsers.add_parser("tf", help="Returns the frequency of the requested term in a specific document ID.")
     tf_parser.add_argument("doc_id", type=int, help="Document ID")
     tf_parser.add_argument("term", type=str, help="Search term. One word only please.")
+
+    idf_parser = subparsers.add_parser("idf", help="Calculates the inverse document frequency(IDF) of a given term across all documents.")
+    idf_parser.add_argument("term", help="The term to calculate. One word only please.")
 
     movieDB = InvertedIndex()
 
@@ -80,6 +89,17 @@ def main() -> None:
                 print(f"Term frequency for {args.term} in document {args.doc_id}\n")
                 result = movieDB.get_tf(args.doc_id, args.term)
                 print(f"The term '{args.term}' appears {result} time(s).\n")
+        case "idf":
+            try:
+                movieDB.load()
+            except Exception as e:
+                print(f"Whoops! Got an error: {e}")
+            else:
+                term = separator(args.term)
+                if len(term) > 1:
+                    print(f"multiple terms; only the first one will be counted.")
+                idf_count = idf(movieDB, term[0])
+                print(f"Inverse document frequency of {term[0]}: {idf_count:.2f}")
         case _:
             parser.print_help()
 
