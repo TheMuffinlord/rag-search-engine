@@ -38,9 +38,11 @@ def search(movieDB: InvertedIndex, terms: str, limit: int = DEFAULT_SEARCH_LIMIT
         return matchList
 
 def idf(movieDB: InvertedIndex, term: str):
-    
+    term = separator(term)
+    if len(term) > 1:
+        print(f"multiple terms; only the first one will be counted.")
     doc_count = len(movieDB.docmap)
-    match_count = len(movieDB.index[term])
+    match_count = len(movieDB.index[term[0]])
     return math.log((doc_count + 1) / (match_count + 1))
     
 
@@ -99,24 +101,18 @@ def main() -> None:
             except Exception as e:
                 print(f"Whoops! Got an error: {e}")
             else:
-                term = separator(args.term)
-                if len(term) > 1:
-                    print(f"multiple terms; only the first one will be counted.")
-                idf_count = idf(movieDB, term[0])
-                print(f"Inverse document frequency of {term[0]}: {idf_count:.2f}")
+                idf_count = idf(movieDB, args.term)
+                print(f"Inverse document frequency of {args.term}: {idf_count:.2f}")
         case "tfidf":
             try:
                 movieDB.load()
             except Exception as e:
                 print(f"Whoops! Got an error: {e}")
             else:
-                term = separator(args.term)
-                if len(term) > 1:
-                    print(f"multiple terms; only the first one will be counted.")
-                tf_count = movieDB.get_tf(args.doc_id, term[0])
-                idf_count = idf(movieDB, term[0])
+                tf_count = movieDB.get_tf(args.doc_id, args.term)
+                idf_count = idf(movieDB, args.term)
                 tf_idf = tf_count * idf_count
-                print(f"TF-IDF score of '{term[0]}' in '{args.doc_id}': {tf_idf:.2f}")
+                print(f"TF-IDF score of '{args.term}' in '{args.doc_id}': {tf_idf:.2f}")
         
         case _:
             parser.print_help()
