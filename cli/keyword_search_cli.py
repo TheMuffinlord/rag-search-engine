@@ -63,6 +63,10 @@ def main() -> None:
     idf_parser = subparsers.add_parser("idf", help="Calculates the inverse document frequency(IDF) of a given term across all documents.")
     idf_parser.add_argument("term", help="The term to calculate. One word only please.")
 
+    tfidf_parser = subparsers.add_parser("tfidf", help="Calculates the TF-IDF (look it up) of a specific term in a specific document.")
+    tfidf_parser.add_argument("doc_id", type=int, help="Document ID to calculate for.")
+    tfidf_parser.add_argument("term", type=str, help="The term to calculate. One word only please.")
+
     movieDB = InvertedIndex()
 
     args = parser.parse_args()
@@ -100,6 +104,20 @@ def main() -> None:
                     print(f"multiple terms; only the first one will be counted.")
                 idf_count = idf(movieDB, term[0])
                 print(f"Inverse document frequency of {term[0]}: {idf_count:.2f}")
+        case "tfidf":
+            try:
+                movieDB.load()
+            except Exception as e:
+                print(f"Whoops! Got an error: {e}")
+            else:
+                term = separator(args.term)
+                if len(term) > 1:
+                    print(f"multiple terms; only the first one will be counted.")
+                tf_count = movieDB.get_tf(args.doc_id, term[0])
+                idf_count = idf(movieDB, term[0])
+                tf_idf = tf_count * idf_count
+                print(f"TF-IDF score of '{term[0]}' in '{args.doc_id}': {tf_idf:.2f}")
+        
         case _:
             parser.print_help()
 
