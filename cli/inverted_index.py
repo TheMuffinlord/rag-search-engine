@@ -1,7 +1,7 @@
 from word_actions import *
 from constants import CACHE_DIR
 
-import pickle, os, collections
+import pickle, os, collections, math
 
 
 class InvertedIndex:
@@ -57,10 +57,23 @@ class InvertedIndex:
             print(f"debug: path missing. index: {os.path.exists(self.index_path)}; docmap: {os.path.exists(self.docmap_path)}")
             raise Exception('uninitialized movie index')
 
+    def get_df(self, term):
+        term = separator(term)
+        if len(term) > 1:
+            raise Exception('multiple terms unsupported')
+        return len(self.index[term[0]])
+
     def get_tf(self, doc_id, term):
         term = separator(term)
         if len(term) > 1:
-            raise Exception('cannot find frequency for multiple terms')
+            raise Exception('multiple terms unsupported')
         term_counts = self.term_frequencies[doc_id]
         return term_counts[term[0]]
         
+    def get_bm25_idf(self, term: str) -> float:
+        term = separator(term)
+        if len(term) > 1:
+            raise Exception('multiple terms unsupported')
+        num_docs = len(self.docmap)
+        doc_freq = self.get_df(term[0])
+        return math.log((num_docs - doc_freq + 0.5) / (doc_freq + 0.5) + 1)

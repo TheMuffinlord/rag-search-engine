@@ -69,6 +69,9 @@ def main() -> None:
     tfidf_parser.add_argument("doc_id", type=int, help="Document ID to calculate for.")
     tfidf_parser.add_argument("term", type=str, help="The term to calculate. One word only please.")
 
+    bm25idf_parser = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
+    bm25idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")  
+
     movieDB = InvertedIndex()
 
     args = parser.parse_args()
@@ -113,6 +116,14 @@ def main() -> None:
                 idf_count = idf(movieDB, args.term)
                 tf_idf = tf_count * idf_count
                 print(f"TF-IDF score of '{args.term}' in '{args.doc_id}': {tf_idf:.2f}")
+        case "bm25idf":
+            try:
+                movieDB.load()
+            except Exception as e:
+                print(f"Whoops! Got an error: {e}")
+            else:
+                bm25idf = movieDB.get_bm25_idf(args.term)
+                print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
         
         case _:
             parser.print_help()
