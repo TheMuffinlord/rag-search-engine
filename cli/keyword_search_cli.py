@@ -6,6 +6,7 @@ import argparse, math
 
 from word_actions import *
 from inverted_index import InvertedIndex
+from constants import BM25_K1
 
 DEFAULT_SEARCH_LIMIT = 5
 
@@ -45,7 +46,18 @@ def idf(movieDB: InvertedIndex, term: str):
     match_count = len(movieDB.index[term[0]])
     return math.log((doc_count + 1) / (match_count + 1))
     
+def movieDB_loader(movieDB: InvertedIndex): # this solves a problem but i don't actually care to clean up this code right now or maybe ever?
+    try:
+        movieDB.load()
+    except Exception as e:
+        print(f"Whoops! Got an error: {e}")
+    else:
+        return movieDB
 
+def bm25_tf_command(movieDB: InvertedIndex, doc_id: int, term: str, k1=BM25_K1):
+    movieDB = movieDB_loader(movieDB)
+    return movieDB.get_bm25_tf(doc_id, term, k1)
+    
 
 # the solution has the results being sent to its own function to display. probably smart. do that.
 
@@ -72,6 +84,11 @@ def main() -> None:
     bm25idf_parser = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
     bm25idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")  
 
+    bm25_tf_parser = subparsers.add_parser("bm25tf", help="Get BM25 TF score for a given document ID and term")
+    bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
+    bm25_tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
+
     movieDB = InvertedIndex()
 
     args = parser.parse_args()
@@ -90,22 +107,14 @@ def main() -> None:
             print("Index saved!")
             #print(f"First document for token 'merida' = {movieDB.get_documents('merida')}")
         case "tf":
-            try:
-                movieDB.load()
-            except Exception as e:
-                print(f"Whoops! Got an error: {e}")
-            else:
-                print(f"Term frequency for {args.term} in document {args.doc_id}\n")
-                result = movieDB.get_tf(args.doc_id, args.term)
-                print(f"The term '{args.term}' appears {result} time(s).\n")
+            movieDB = movieDB_loader(movieDB)
+            print(f"Term frequency for {args.term} in document {args.doc_id}\n")
+            result = movieDB.get_tf(args.doc_id, args.term)
+            print(f"The term '{args.term}' appears {result} time(s).\n")
         case "idf":
-            try:
-                movieDB.load()
-            except Exception as e:
-                print(f"Whoops! Got an error: {e}")
-            else:
-                idf_count = idf(movieDB, args.term)
-                print(f"Inverse document frequency of {args.term}: {idf_count:.2f}")
+            movieDB = movieDB_loader(movieDB)
+            idf_count = idf(movieDB, args.term)
+            print(f"Inverse document frequency of {args.term}: {idf_count:.2f}")
         case "tfidf":
             try:
                 movieDB.load()
@@ -124,7 +133,10 @@ def main() -> None:
             else:
                 bm25idf = movieDB.get_bm25_idf(args.term)
                 print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
-        
+        case "bm25tf":
+            bm25tf = bm25_tf_command(movieDB, args.doc_id, args.term, args.k1)
+            print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}")
+
         case _:
             parser.print_help()
 

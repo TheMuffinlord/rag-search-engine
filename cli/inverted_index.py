@@ -1,5 +1,5 @@
 from word_actions import *
-from constants import CACHE_DIR
+from constants import CACHE_DIR, BM25_K1
 
 import pickle, os, collections, math
 
@@ -77,3 +77,7 @@ class InvertedIndex:
         num_docs = len(self.docmap)
         doc_freq = self.get_df(term[0])
         return math.log((num_docs - doc_freq + 0.5) / (doc_freq + 0.5) + 1)
+    
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1):
+        tf = self.get_tf(doc_id, term)
+        return (tf * (k1 + 1)) / (tf + k1)
