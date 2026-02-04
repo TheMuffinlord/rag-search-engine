@@ -6,7 +6,7 @@ import argparse, math
 
 from word_actions import *
 from inverted_index import InvertedIndex
-from constants import BM25_K1
+from constants import BM25_K1, BM25_B
 
 DEFAULT_SEARCH_LIMIT = 5
 
@@ -54,9 +54,9 @@ def movieDB_loader(movieDB: InvertedIndex): # this solves a problem but i don't 
     else:
         return movieDB
 
-def bm25_tf_command(movieDB: InvertedIndex, doc_id: int, term: str, k1=BM25_K1):
+def bm25_tf_command(movieDB: InvertedIndex, doc_id: int, term: str, k1=BM25_K1, b=BM25_B):
     movieDB = movieDB_loader(movieDB)
-    return movieDB.get_bm25_tf(doc_id, term, k1)
+    return movieDB.get_bm25_tf(doc_id, term, k1, b)
     
 
 # the solution has the results being sent to its own function to display. probably smart. do that.
@@ -88,6 +88,7 @@ def main() -> None:
     bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
     bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
     bm25_tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
+    bm25_tf_parser.add_argument("b", type=float, nargs="?", default=BM25_B, help="Tunable BM25 b parameter")
 
     movieDB = InvertedIndex()
 

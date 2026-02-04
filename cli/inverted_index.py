@@ -1,5 +1,5 @@
 from word_actions import *
-from constants import CACHE_DIR, BM25_K1
+from constants import CACHE_DIR, BM25_K1, BM25_B
 
 import pickle, os, collections, math
 
@@ -12,10 +12,13 @@ class InvertedIndex:
         self.docmap_path = os.path.join(CACHE_DIR, 'docmap.pkl')
         self.term_frequencies = {}
         self.freq_path = os.path.join(CACHE_DIR, 'term_frequencies.pkl')
+        self.doc_lengths = {}
+        self.doc_lengths_path = os.path.join(CACHE_DIR, 'doc_lengths.pkl')
 
     def __add_document(self, doc_id, text):
         text = separator(text)
         word_list = []
+        self.doc_lengths[doc_id] = len(text)
         for word in text:
             word_list.append(word)
             if word not in self.index:
@@ -23,6 +26,12 @@ class InvertedIndex:
             else:
                 self.index[word].add(doc_id)
         self.term_frequencies[doc_id] = collections.Counter(word_list)
+
+    def __get_avg_doc_length(self) -> float:
+        if len(self.doc_lengths) > 0:
+            return sum(self.doc_lengths.values()) / len(self.doc_lengths)
+        return 0.0
+        
 
     def get_documents(self, term: str):
         if term.lower() in self.index:
@@ -44,18 +53,22 @@ class InvertedIndex:
             pickle.dump(self.docmap, f)
         with (open(self.freq_path, 'wb')) as f:
             pickle.dump(self.term_frequencies, f)
+        with (open(self.doc_lengths_path, 'wb')) as f:
+            pickle.dump(self.doc_lengths, f)
 
     def load(self):
-        if os.path.exists(self.index_path) and os.path.exists(self.docmap_path) and os.path.exists(self.freq_path):
+        if os.path.exists(self.index_path) and os.path.exists(self.docmap_path) and os.path.exists(self.freq_path) and os.path.exists(self.doc_lengths_path):
+            # how many of these are we going to have to do, do you reckon? should peek the solution notes to see if there's a better way
             with open(self.index_path, 'rb') as f:
                 self.index = pickle.load(f)
             with open(self.docmap_path, 'rb') as f:
                 self.docmap = pickle.load(f)
             with open(self.freq_path, 'rb') as f:
                 self.term_frequencies = pickle.load(f)         
+            with open(self.doc_lengths_path, 'rb') as f:
+                self.doc_lengths = pickle.load(f)
         else:
-            print(f"debug: path missing. index: {os.path.exists(self.index_path)}; docmap: {os.path.exists(self.docmap_path)}")
-            raise Exception('uninitialized movie index')
+            raise Exception('uninitialized movieDB index')
 
     def get_df(self, term):
         term = separator(term)
@@ -78,6 +91,12 @@ class InvertedIndex:
         doc_freq = self.get_df(term[0])
         return math.log((num_docs - doc_freq + 0.5) / (doc_freq + 0.5) + 1)
     
-    def get_bm25_tf(self, doc_id, term, k1=BM25_K1):
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1, b=BM25_B):
         tf = self.get_tf(doc_id, term)
-        return (tf * (k1 + 1)) / (tf + k1)
+        avg_doc_length = self.__get_avg_doc_length()
+        length_norm = 1 - b + b * (self.doc_lengths[doc_id] / avg_doc_length)
+        #print(f"DEBUG: document length is {self.doc_lengths[doc_id]}, average is {avg_doc_length}, length norm should be {length_norm}.")
+        term_freq = (tf * (k1 + 1)) / (tf + k1 * length_norm)
+        #print(f"DEBUG: term frequency should be {term_freq}. calculated as ({tf} * ({k1} + 1 )) / ({tf} + {k1} * {length_norm}).")
+        return term_freq
+    
