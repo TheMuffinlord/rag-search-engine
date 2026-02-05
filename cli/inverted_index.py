@@ -1,5 +1,6 @@
 from word_actions import *
 from constants import CACHE_DIR, BM25_K1, BM25_B
+from itertools import islice
 
 import pickle, os, collections, math
 
@@ -100,3 +101,23 @@ class InvertedIndex:
         #print(f"DEBUG: term frequency should be {term_freq}. calculated as ({tf} * ({k1} + 1 )) / ({tf} + {k1} * {length_norm}).")
         return term_freq
     
+    def bm25(self, doc_id, term):
+        idf = self.get_bm25_idf(term)
+        tf = self.get_bm25_tf(doc_id, term)
+        return tf * idf
+    
+    def bm25_search(self, query, limit=5) -> dict:
+        tokens = separator(query)
+        score_matches = {}
+        for document in self.docmap:
+            #print(document)
+            if document not in score_matches:
+                score_matches[document] = 0
+            for token in tokens:
+                #print(token)
+                score_matches[document] += self.bm25(document, token)
+                #print(score_matches[document])
+        #print(score_matches)
+        score_matches = {k: v for k, v in sorted(score_matches.items(), key=lambda item: item[1], reverse=True)}
+        #print(score_matches)
+        return {k: v for i, (k, v) in enumerate(score_matches.items()) if i < limit}
