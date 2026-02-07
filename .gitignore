@@ -11,3 +11,5 @@ wheels/
 
 /data/
 /cache/
+pyproject.toml
+uv.lock
