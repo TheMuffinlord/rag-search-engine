@@ -2,12 +2,9 @@
 
 import argparse
 
-from lib.semantic_search import SemanticSearch
+from lib.semantic_search import verify_model, embed_text
 
-def verify_model():
-    SemanticSearchModel = SemanticSearch()
-    print(f"Model loaded: {SemanticSearchModel.model}")
-    print(f"Max sequence length: {SemanticSearchModel.model.max_seq_length}")
+
 
 
 def main():
@@ -18,11 +15,16 @@ def main():
 
     verify_parser = subparsers.add_parser("verify", help="Verifies that the LLM has been loaded.")
 
+    embed_text_parser = subparsers.add_parser("embed_text", help="Embeds text or something idk")
+    embed_text_parser.add_argument("text", type=str, help="Text to be embedded.")
+
     args = parser.parse_args()
 
     match args.command:
         case "verify":
             verify_model()
+        case "embed_text":
+            embed_text(args.text)
         case _:
             parser.print_help()
 
