@@ -5,7 +5,7 @@ import argparse
 from lib.semantic_search import verify_model, embed_text
 
 
-
+#be wary when running the boot.dev cli on these; results may not show success. Run tests by hand to verify.
 
 def main():
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
