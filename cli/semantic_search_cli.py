@@ -2,7 +2,7 @@
 
 import argparse
 
-from lib.semantic_search import verify_model, embed_text, verify_embeddings
+from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text
 
 
 #be wary when running the boot.dev cli on these; results may not show success. Run tests by hand to verify.
@@ -20,6 +20,9 @@ def main():
 
     verify_embeddings_parser = subparsers.add_parser("verify_embeddings", help="Verifies the cached list of embeddings.")
 
+    ebq_parser = subparsers.add_parser("embedquery", help="Converts a search query into embedding vectors.")
+    ebq_parser.add_argument("query", type=str, help="Query to embed.")
+
     args = parser.parse_args()
 
     match args.command:
@@ -29,6 +32,8 @@ def main():
             embed_text(args.text)
         case "verify_embeddings":
             verify_embeddings()
+        case "embedquery":
+            embed_query_text(args.query)
         case _:
             parser.print_help()
 

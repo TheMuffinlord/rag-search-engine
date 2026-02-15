@@ -12,6 +12,13 @@ def embed_text(text):
     print(f"First 3 dimensions: {embedding[:3]}")
     print(f"Dimensions: {embedding.shape[0]}")
 
+def embed_query_text(query):
+    ssm = SemanticSearch()
+    embedding = ssm.generate_embedding(query)
+    print(f"Query: {query}")
+    print(f"First 5 dimensions: {embedding[:5]}")
+    print(f"Shape: {embedding.shape}")
+
 def verify_model():
     SemanticSearchModel = SemanticSearch()
     print(f"Model loaded: {SemanticSearchModel.model}")
