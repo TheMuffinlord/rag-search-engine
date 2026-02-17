@@ -43,7 +43,7 @@ def cosine_similarity(vec1, vec2):
 
     return dot_product / (norm1 * norm2)
 
-def search(query, limit=5):
+def semantic_search(query, limit=5):
     ssm = SemanticSearch()
     with open(DATA_PATH, 'r') as f:
         movieList = json.load(f)
@@ -93,18 +93,20 @@ class SemanticSearch:
         return self.build_embeddings(documents)
     
     def search(self, query, limit):
-        if not self.embeddings.all():
+        if self.embeddings is None or self.embeddings.size == 0:
             raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
-        embedding = self.generate_embedding(query)
+        if self.documents is None or len(self.documents) == 0:
+            raise ValueError("No documents loaded. Call 'load_or_create_embeddings' first.")
+        query_embedding = self.generate_embedding(query)
         similarities = []
-        for e in range(len(self.embeddings)):
-            cs = cosine_similarity(embedding, self.embeddings[e])
-            similarities.append((cs, self.documents[e]))
-        similarities = sorted(similarities, key=lambda item: item[0], reverse=True)
+        for i, doc_embedding in enumerate(self.embeddings):
+            cs = cosine_similarity(query_embedding, doc_embedding)
+            similarities.append((cs, self.documents[i]))
+        similarities.sort(key=lambda item: item[0], reverse=True)
         results = []
-        for i in range(limit):
-            entry = {'score': similarities[i][0],
-                     'title': similarities[i][1]['title'],
-                     'description': similarities[i][1]['description']}
+        for score, doc in similarities[:limit]:
+            entry = {'score': score,
+                     'title': doc['title'],
+                     'description': doc['description']}
             results.append(entry)
         return results

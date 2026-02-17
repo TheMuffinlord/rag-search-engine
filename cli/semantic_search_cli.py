@@ -2,7 +2,7 @@
 
 import argparse
 
-from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, search
+from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, semantic_search
 
 
 #be wary when running the boot.dev cli on these; results may not show success. Run tests by hand to verify.
@@ -39,7 +39,7 @@ def main():
         case "embedquery":
             embed_query_text(args.query)
         case "search":
-            search(args.query, args.limit)
+            semantic_search(args.query, args.limit)
         case _:
             parser.print_help()
 
