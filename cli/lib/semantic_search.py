@@ -33,6 +33,29 @@ def verify_embeddings():
     print(f"Number of docs:   {len(documents)}")
     print(f"Embeddings shape: {embeddings.shape[0]} vectors in {embeddings.shape[1]} dimensions")
 
+def cosine_similarity(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
+
+def search(query, limit=5):
+    ssm = SemanticSearch()
+    with open(DATA_PATH, 'r') as f:
+        movieList = json.load(f)
+    documents = movieList['movies']
+    embeddings = ssm.load_or_create_embeddings(documents)
+    result = ssm.search(query, limit)
+    for r in range(len(result)):
+        print(f"{r+1}. {result[r]['title']} (score: {result[r]['score']:.4f})")
+        print(f"   {result[r]['description']}")
+        print()
+
+
 class SemanticSearch:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
@@ -68,3 +91,20 @@ class SemanticSearch:
             if len(self.embeddings) == len(documents):
                 return self.embeddings
         return self.build_embeddings(documents)
+    
+    def search(self, query, limit):
+        if not self.embeddings.all():
+            raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+        embedding = self.generate_embedding(query)
+        similarities = []
+        for e in range(len(self.embeddings)):
+            cs = cosine_similarity(embedding, self.embeddings[e])
+            similarities.append((cs, self.documents[e]))
+        similarities = sorted(similarities, key=lambda item: item[0], reverse=True)
+        results = []
+        for i in range(limit):
+            entry = {'score': similarities[i][0],
+                     'title': similarities[i][1]['title'],
+                     'description': similarities[i][1]['description']}
+            results.append(entry)
+        return results
