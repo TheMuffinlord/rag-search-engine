@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer
-from constants import CACHE_DIR, DATA_PATH
+from constants import CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
 import numpy as np
 import os, json
 
@@ -54,6 +54,26 @@ def semantic_search(query, limit=5):
         print(f"{r+1}. {result[r]['title']} (score: {result[r]['score']:.4f})")
         print(f"   {result[r]['description']}")
         print()
+
+def chunk_doer(text, size, overlap):
+    words = text.split()
+    chunks = []
+
+    n_words = len(words)
+    i = 0
+    while i < n_words:
+        chunk_words = words[i: i + size]
+        if chunks and len(chunk_words) <= overlap:
+            break
+        chunks.append(' '.join(chunk_words))
+        i += size - overlap
+    return chunks
+
+def chunk_command(text:str, size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERLAP):
+    r_chunks = chunk_doer(text, size, overlap)
+    print(f"Chunking {len(text)} characters")
+    for n, chunk in enumerate(r_chunks):
+        print(f"{n+1}. {chunk}")
 
 
 class SemanticSearch:
