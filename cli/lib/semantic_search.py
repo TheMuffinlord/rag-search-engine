@@ -1,9 +1,28 @@
 from sentence_transformers import SentenceTransformer
-from constants import CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
+from constants import CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, DEFAULT_SEMANTIC_CHUNK_SIZE
 import numpy as np
-import os, json
+import os, json, re
+
+def semantic_chunk_cmd(text:str, size=DEFAULT_SEMANTIC_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERLAP):
+    r_chunks = sentence_chunk_doer(text, size, overlap)
+    print(f"Semantically chunking {len(text)} characters")
+    for n, chunk in enumerate(r_chunks):
+        print(f"{n+1}. {chunk}")
 
 
+def sentence_chunk_doer(text, size, overlap):
+    sentences = re.split(pattern=r"(?<=[.!?])\s+", string=text)
+    chunks = []
+
+    n_sent = len(sentences)
+    i = 0
+    while i < n_sent:
+        chunk_sents = sentences[i: i + size]
+        if chunks and len(chunk_sents) <= overlap:
+            break
+        chunks.append(' '.join(chunk_sents))
+        i += size - overlap
+    return chunks
 
 def embed_text(text):
     newSearch = SemanticSearch()

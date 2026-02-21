@@ -2,7 +2,8 @@
 
 import argparse
 
-from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, semantic_search, chunk_command
+from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, semantic_search, chunk_command, semantic_chunk_cmd
+from constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_SEMANTIC_CHUNK_SIZE
 
 #be wary when running the boot.dev cli on these; results may not show success. Run tests by hand to verify.
 
@@ -28,8 +29,13 @@ def main():
 
     chunk_parser = subparsers.add_parser("chunk", help="Chunk text")
     chunk_parser.add_argument("text", type=str, help="Text to chunk.")
-    chunk_parser.add_argument("--chunk-size", type=int, nargs="?", default=200, help="Limit of text to chunk, default 200")
-    chunk_parser.add_argument("--overlap", type=int, nargs="?", default=0, help="Amount of chunk overlap, default 0")
+    chunk_parser.add_argument("--chunk-size", type=int, nargs="?", default=DEFAULT_CHUNK_SIZE, help=f"Limit of text to chunk, default {DEFAULT_CHUNK_SIZE}")
+    chunk_parser.add_argument("--overlap", type=int, nargs="?", default=DEFAULT_CHUNK_OVERLAP, help=f"Amount of chunk overlap, default {DEFAULT_CHUNK_OVERLAP}")
+
+    semantic_chunk_parser = subparsers.add_parser("semantic_chunk", help="Semantically chunks text into sentences.")
+    semantic_chunk_parser.add_argument("text", type=str, help="Text to chunk.")
+    semantic_chunk_parser.add_argument("--max-chunk-size", type=int, nargs="?", default=DEFAULT_SEMANTIC_CHUNK_SIZE, help=f"Limit of sentences to chunk, default {DEFAULT_SEMANTIC_CHUNK_SIZE}")
+    semantic_chunk_parser.add_argument("--overlap", type=int, nargs="?", default=DEFAULT_CHUNK_OVERLAP, help=f"Amount of chunk overlap, default {DEFAULT_CHUNK_OVERLAP}")
 
     args = parser.parse_args()
 
@@ -46,6 +52,8 @@ def main():
             semantic_search(args.query, args.limit)
         case "chunk":
             chunk_command(args.text, args.chunk_size, args.overlap)
+        case "semantic_chunk":
+            semantic_chunk_cmd(args.text, args.max_chunk_size, args.overlap)
         case _:
             parser.print_help()
 
