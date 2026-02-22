@@ -94,6 +94,13 @@ def chunk_command(text:str, size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERL
     for n, chunk in enumerate(r_chunks):
         print(f"{n+1}. {chunk}")
 
+def embed_chunks():
+    csm = ChunkedSemanticSearch()
+    with open(DATA_PATH, 'r') as f:
+        movieList = json.load(f)
+    documents = movieList['movies']
+    chunk_embeddings = csm.load_or_create_chunk_embeddings(documents)
+    print(f"Generated {len(chunk_embeddings)} chunked embeddings")
 
 class SemanticSearch:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
@@ -149,3 +156,52 @@ class SemanticSearch:
                      'description': doc['description']}
             results.append(entry)
         return results
+    
+
+class ChunkedSemanticSearch(SemanticSearch):
+    def __init__(self, model_name="all-MiniLM-L6-v2"):
+        super().__init__(model_name)
+        self.chunk_embeddings = None
+        self.chunk_embeddings_path = os.path.join(CACHE_DIR, 'chunk_embeddings.npy')
+        self.chunk_metadata = None
+        self.chunk_metadata_path = os.path.join(CACHE_DIR, 'chunk_metadata.json')
+
+    def build_chunk_embeddings(self, documents):
+        self.documents = documents
+        all_chunks = []
+        all_chunk_meta = []
+        for i, doc in enumerate(documents):
+            self.document_map[doc['id']] = doc
+            if len(doc['description']) != 0:
+                chunks = sentence_chunk_doer(doc['description'], DEFAULT_SEMANTIC_CHUNK_SIZE, 1)
+                for j, chunk in enumerate(chunks):
+                    all_chunks.append(chunk)
+                    all_chunk_meta.append({'movie_idx': i, 'chunk_idx': j, 'total_chunks': len(chunks)})
+        self.chunk_embeddings = self.model.encode(all_chunks, show_progress_bar=True)
+        self.chunk_metadata = all_chunk_meta
+        with open(self.chunk_embeddings_path, 'wb') as f:
+            np.save(f, self.chunk_embeddings)
+        with open(self.chunk_metadata_path, 'w') as f:
+            json.dump({"chunks": self.chunk_metadata, "total_chunks": len(all_chunks)}, f, indent=2)
+        return self.chunk_embeddings
+    
+    def load_or_create_chunk_embeddings(self, documents):
+        self.documents = documents
+        for doc in documents:
+            self.document_map[doc['id']] = doc
+        if os.path.exists(self.chunk_embeddings_path) and os.path.exists(self.chunk_metadata_path):
+            with open(self.chunk_embeddings_path, 'rb') as f:
+                self.chunk_embeddings = np.load(f)
+            with open(self.chunk_metadata_path, 'r') as f:
+                chunk_meta = json.load(f)
+            self.chunk_metadata = chunk_meta['chunks']
+            if len(self.chunk_embeddings) == chunk_meta['total_chunks']:
+                #print("DEBUG: chunk load full success.")
+                return self.chunk_embeddings
+            #print("DEBUG: chunks are of different size; not sure this matters?")
+
+        #print("DEBUG: chunk load irregularity. Rebuilding chunk embedding.")
+        return self.build_chunk_embeddings(documents)
+        
+
+            
