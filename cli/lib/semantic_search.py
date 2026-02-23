@@ -1,5 +1,7 @@
 from sentence_transformers import SentenceTransformer
-from constants import CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, DEFAULT_SEMANTIC_CHUNK_SIZE
+from constants import (CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, 
+                       DEFAULT_SEMANTIC_CHUNK_SIZE, DEFAULT_CHUNK_SEARCH_LIMIT, SCORE_PRECISION, 
+                       RETURN_DOCUMENT_LIMIT)
 import numpy as np
 import os, json, re
 
@@ -101,6 +103,16 @@ def embed_chunks():
     documents = movieList['movies']
     chunk_embeddings = csm.load_or_create_chunk_embeddings(documents)
     print(f"Generated {len(chunk_embeddings)} chunked embeddings")
+
+def search_chunked_cmd(query: str, limit=DEFAULT_CHUNK_SEARCH_LIMIT): 
+    with open(DATA_PATH, 'r') as f:
+        movieList = json.load(f)
+    csm = ChunkedSemanticSearch()
+    chunk_embeddings = csm.load_or_create_chunk_embeddings(movieList['movies'])
+    results = csm.search_chunk(query, limit)
+    for i, result in enumerate(results):
+        print(f"\n{i}. {result['title']} (score: {result['score']:.4f})")
+        print(f"    {result['description']}...")
 
 class SemanticSearch:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
@@ -204,4 +216,31 @@ class ChunkedSemanticSearch(SemanticSearch):
         return self.build_chunk_embeddings(documents)
         
 
-            
+    def search_chunk(self, query:str, limit: int = DEFAULT_CHUNK_SEARCH_LIMIT):
+        query_embedding = self.generate_embedding(query)
+        chunk_similarities = []
+        for i, chunk_embedding in enumerate(self.chunk_embeddings):
+            c_score = cosine_similarity(query_embedding, chunk_embedding)
+            chunk_similarities.append({'chunk_idx':i, 'movie_idx':self.chunk_metadata[i]['movie_idx'], 'score':c_score})
+        movie_score_map = {}
+        for chunk_score in chunk_similarities:
+            if chunk_score['movie_idx'] not in movie_score_map.keys() or movie_score_map[chunk_score['movie_idx']]['score'] < chunk_score['score']:
+                movie_score_map[chunk_score['movie_idx']] = chunk_score
+        sorted_scores = []
+        r_limit = 0
+        for d, score in sorted(movie_score_map.items(), key=lambda item: item[1]['score'], reverse=True):
+            #print(d)
+            #print(score)
+            r_limit += 1
+            doc = self.documents[d]
+            #print(doc)
+            sorted_scores.append({
+                'id': d,
+                'title': doc['title'],
+                'description': doc['description'][:RETURN_DOCUMENT_LIMIT],
+                'score': round(score['score'], SCORE_PRECISION),
+                'metadata': self.chunk_metadata[score['chunk_idx']]
+            })
+            if r_limit >= limit:
+                break
+        return sorted_scores
