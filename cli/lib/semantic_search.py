@@ -12,17 +12,25 @@ def semantic_chunk_cmd(text:str, size=DEFAULT_SEMANTIC_CHUNK_SIZE, overlap=DEFAU
         print(f"{n+1}. {chunk}")
 
 
-def sentence_chunk_doer(text, size, overlap):
+def sentence_chunk_doer(text:str, size, overlap):
+    text = text.strip()
+    if text == "":
+        return []
     sentences = re.split(pattern=r"(?<=[.!?])\s+", string=text)
     chunks = []
 
     n_sent = len(sentences)
+    if n_sent == 1 and not sentences[0].endswith((".", "!", "?")):
+        print(f"DEBUG: non-punctuated edge case. Confirmation: '{sentences}'")
+        return sentences
     i = 0
     while i < n_sent:
         chunk_sents = sentences[i: i + size]
         if chunks and len(chunk_sents) <= overlap:
             break
-        chunks.append(' '.join(chunk_sents))
+        chunk_sent = ' '.join(chunk_sents).strip()
+        if chunk_sent != "":
+            chunks.append(chunk_sent)
         i += size - overlap
     return chunks
 
