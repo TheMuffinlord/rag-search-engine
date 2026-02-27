@@ -4,9 +4,9 @@
 
 import argparse, math
 
-from word_actions import *
-from inverted_index import InvertedIndex
-from constants import BM25_K1, BM25_B
+from cli.lib.word_actions import *
+from cli.lib.inverted_index import InvertedIndex
+from cli.lib.constants import BM25_K1, BM25_B
 
 DEFAULT_SEARCH_LIMIT = 5
 

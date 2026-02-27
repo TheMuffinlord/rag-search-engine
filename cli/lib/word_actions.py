@@ -1,7 +1,7 @@
 import string, json
 
 from nltk.stem import PorterStemmer
-from constants import DATA_PATH, STOPWORDS_PATH
+from cli.lib.constants import DATA_PATH, STOPWORDS_PATH
 
 def stripper(term: str):
     return term.translate(str.maketrans('','', string.punctuation)).lower()

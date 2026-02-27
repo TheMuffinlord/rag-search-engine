@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer
-from constants import (CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, 
+from cli.lib.constants import (CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, 
                        DEFAULT_SEMANTIC_CHUNK_SIZE, DEFAULT_CHUNK_SEARCH_LIMIT, SCORE_PRECISION, 
                        RETURN_DOCUMENT_LIMIT)
 import numpy as np

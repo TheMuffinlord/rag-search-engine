@@ -4,7 +4,7 @@ import argparse
 
 from lib.semantic_search import (verify_model, embed_text, verify_embeddings, embed_query_text, 
                                  semantic_search, chunk_command, semantic_chunk_cmd, embed_chunks, search_chunked_cmd)
-from constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_SEMANTIC_CHUNK_SIZE
+from cli.lib.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_SEMANTIC_CHUNK_SIZE
 
 #be wary when running the boot.dev cli on these; results may not show success. Run tests by hand to verify.
 

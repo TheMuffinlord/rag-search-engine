@@ -1,5 +1,5 @@
-from word_actions import *
-from constants import CACHE_DIR, BM25_K1, BM25_B
+from cli.lib.word_actions import *
+from cli.lib.constants import CACHE_DIR, BM25_K1, BM25_B
 from itertools import islice
 
 import pickle, os, collections, math
