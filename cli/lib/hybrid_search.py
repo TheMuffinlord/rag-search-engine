@@ -3,8 +3,22 @@ import os
 from .semantic_search import ChunkedSemanticSearch
 from .inverted_index import InvertedIndex
 from .constants import (
-    DEFAULT_SEARCH_LIMIT, DEFAULT_RRF_SEARCH_LIMIT
+    DEFAULT_SEARCH_LIMIT, DEFAULT_RRF_SEARCH_LIMIT, SCORE_PRECISION
 )
+
+def normalize(scores: list):
+    if len(scores) == 0:
+        return
+    normalized_scores = []
+    min_score = min(scores)
+    max_score = max(scores)
+    for score in scores:
+        if min_score != max_score:
+            normalized_scores.append((score - min_score)/(max_score - min_score))
+        else:
+            normalized_scores.append(1.0)
+    for n_score in normalized_scores:
+        print(f"* {round(n_score, SCORE_PRECISION)}")
 
 class HybridSearch:
     def __init__(self, documents):
