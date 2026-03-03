@@ -4,9 +4,9 @@
 
 import argparse, math
 
-from cli.lib.word_actions import *
-from cli.lib.inverted_index import InvertedIndex
-from cli.lib.constants import BM25_K1, BM25_B
+from lib.word_actions import *
+from lib.inverted_index import InvertedIndex
+from lib.constants import BM25_K1, BM25_B
 
 DEFAULT_SEARCH_LIMIT = 5
 
@@ -147,10 +147,8 @@ def main() -> None:
             #print(results)
             print(f"Searching for terms '{args.query}':")
             i = 0
-            for result, score in results.items():
-                i+=1
-                movie = movieDB.docmap[result]
-                print(f"{i}. ({movie['id']}) {movie['title']} - Score: {score:.2f}")
+            for i, res in enumerate(results, 1):
+                print(f"{i}. ({res['id']}) {res['title']} - Score: {res['score']:.2f}")
         case _:
             parser.print_help()
 

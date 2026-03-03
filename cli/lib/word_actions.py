@@ -1,7 +1,8 @@
 import string, json
 
 from nltk.stem import PorterStemmer
-from .constants import DATA_PATH, STOPWORDS_PATH
+from typing import Any
+from .constants import DATA_PATH, STOPWORDS_PATH, SCORE_PRECISION
 
 def stripper(term: str):
     return term.translate(str.maketrans('','', string.punctuation)).lower()
@@ -36,3 +37,13 @@ def match_tokens(query_tokens, title_tokens):
             if query in title:
                 return True
     return False
+
+#i am going to copy this because i am going to lose my fuckign mind
+def format_search_result(doc_id: str, title: str, document: str, score: float, **metadata: Any):
+    return {
+        "id": doc_id,
+        "title": title,
+        "document": document,
+        "score": round(score, SCORE_PRECISION),
+        "metadata": metadata if metadata else {},
+    }

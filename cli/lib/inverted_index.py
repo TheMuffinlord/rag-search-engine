@@ -106,7 +106,7 @@ class InvertedIndex:
         tf = self.get_bm25_tf(doc_id, term)
         return tf * idf
     
-    def bm25_search(self, query, limit=5) -> dict:
+    def bm25_search(self, query, limit=5):
         tokens = separator(query)
         score_matches = {}
         for document in self.docmap:
@@ -118,6 +118,12 @@ class InvertedIndex:
                 score_matches[document] += self.bm25(document, token)
                 #print(score_matches[document])
         #print(score_matches)
-        score_matches = {k: v for k, v in sorted(score_matches.items(), key=lambda item: item[1], reverse=True)}
-        #print(score_matches)
-        return {k: v for i, (k, v) in enumerate(score_matches.items()) if i < limit}
+        sorted_scores = sorted(score_matches.items(), key=lambda item: item[1], reverse=True)
+        #okay fuck this apparently i fucked it
+        #return {k: v for i, (k, v) in enumerate(score_matches.items()) if i < limit}
+        results = []
+        for doc_id, score in sorted_scores[:limit]:
+            doc = self.docmap[doc_id]
+            formatted_result = format_search_result(doc['id'], doc['title'], doc['description'], score)
+            results.append(formatted_result)
+        return results

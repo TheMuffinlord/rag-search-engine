@@ -2,18 +2,21 @@ import os
 
 DEFAULT_SEARCH_LIMIT = 5
 DEFAULT_RRF_SEARCH_LIMIT = 10
+DEFAULT_LARGE_SEARCH_MULTIPLIER = 1
 
 DEFAULT_CHUNK_SIZE = 200
 DEFAULT_CHUNK_OVERLAP = 0
 DEFAULT_SEMANTIC_CHUNK_SIZE = 4
 DEFAULT_CHUNK_SEARCH_LIMIT = 5
 
+DEFAULT_ALPHA_BLEND = 0.5
+
 RETURN_DOCUMENT_LIMIT = 100
 
 SCORE_PRECISION = 4
 
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(PROJECT_ROOT, 'data', 'movies.json')
 STOPWORDS_PATH = os.path.join(PROJECT_ROOT, 'data', 'stopwords.txt')
 

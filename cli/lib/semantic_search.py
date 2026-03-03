@@ -1,4 +1,5 @@
 from sentence_transformers import SentenceTransformer
+from .word_actions import format_search_result
 from .constants import (CACHE_DIR, DATA_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, 
                        DEFAULT_SEMANTIC_CHUNK_SIZE, DEFAULT_CHUNK_SEARCH_LIMIT, SCORE_PRECISION, 
                        RETURN_DOCUMENT_LIMIT)
@@ -242,13 +243,7 @@ class ChunkedSemanticSearch(SemanticSearch):
             r_limit += 1
             doc = self.documents[d]
             #print(doc)
-            sorted_scores.append({
-                'id': d,
-                'title': doc['title'],
-                'description': doc['description'][:RETURN_DOCUMENT_LIMIT],
-                'score': round(score['score'], SCORE_PRECISION),
-                'metadata': self.chunk_metadata[score['chunk_idx']]
-            })
+            sorted_scores.append(format_search_result(d, doc['title'], doc['description'], score['score']))
             if r_limit >= limit:
                 break
         return sorted_scores
