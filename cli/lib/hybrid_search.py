@@ -5,7 +5,7 @@ from .inverted_index import InvertedIndex
 from .word_actions import load_movies, format_search_result
 from .constants import (
     DEFAULT_SEARCH_LIMIT, DEFAULT_RRF_SEARCH_LIMIT, SCORE_PRECISION, DATA_PATH, RETURN_DOCUMENT_LIMIT,
-    DEFAULT_LARGE_SEARCH_MULTIPLIER
+    DEFAULT_LARGE_SEARCH_MULTIPLIER, DEFAULT_ALPHA_BLEND, DEFAULT_RRF_K
 )
 
 def normalize(scores: list):
@@ -38,10 +38,13 @@ def normalize_cmd(scores: list):
     for n_score in normalized_scores:
         print(f"* {round(n_score, SCORE_PRECISION)}")
 
-def hybrid_score(bm25_score, semantic_score, alpha=0.5):
+def hybrid_score(bm25_score, semantic_score, alpha=DEFAULT_ALPHA_BLEND):
     return alpha * bm25_score + (1 - alpha) * semantic_score
 
-def weighted_search_cmd(query, alpha = 0.5, limit = DEFAULT_SEARCH_LIMIT):
+def rrf_score(rank, k=DEFAULT_RRF_K):
+    return 1 / (k + rank)
+
+def weighted_search_cmd(query, alpha = DEFAULT_ALPHA_BLEND, limit = DEFAULT_SEARCH_LIMIT):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
     weighted_results = hybrid_search.weighted_search(query, alpha, limit)
@@ -51,6 +54,18 @@ def weighted_search_cmd(query, alpha = 0.5, limit = DEFAULT_SEARCH_LIMIT):
         print(f"{i+1}. {result['title']}, ID: {result['id']}")
         print(f"   Hybrid Score: {result['score']:.4f}")
         print(f"   BM25: {result['metadata']['bm25_score']:.4f}, Semantic: {result['metadata']['semantic_score']:.4f}")
+        print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
+
+def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT):
+    documents = load_movies()
+    hybrid_search = HybridSearch(documents)
+    rrf_results = hybrid_search.rrf_search(query, k, limit)
+    print(f"Displaying {limit} results:")
+    for i, result in enumerate(rrf_results):
+        #print(result)
+        print(f"{i+1}. {result['title']}, ID: {result['id']}")
+        print(f"   RRF Score: {result['score']:.4f}")
+        print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
         print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
 
 
@@ -121,4 +136,43 @@ class HybridSearch:
         
     
     def rrf_search(self, query, k, limit=DEFAULT_RRF_SEARCH_LIMIT):
-        raise NotImplementedError("Haven't done RRF search yet. What could that be?")
+        bm25_results = self._bm25_search(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER)
+        css_results = self.semantic_search.search_chunk(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER)
+        combined_scores = {}
+
+        for rank, result in enumerate(bm25_results):
+            doc_id = result['id']
+            if doc_id not in combined_scores:
+                combined_scores[doc_id] = {
+                    'title': result['title'],
+                    'document': result['document'],
+                    'rrf_score': 0.0,
+                    'bm25_rank': None,
+                    'semantic_rank': None,
+                }
+            if combined_scores[doc_id]['bm25_rank'] is None:
+                combined_scores[doc_id]['bm25_rank'] = rank
+                combined_scores[doc_id]['rrf_score'] += rrf_score(rank, k)
+            
+        for rank, result in enumerate(css_results):
+            doc_id = result['id']
+            if doc_id not in combined_scores:
+                combined_scores[doc_id] = {
+                    'title': result['title'],
+                    'document': result['document'],
+                    'rrf_score': 0.0,
+                    'bm25_rank': None,
+                    'semantic_rank': None,
+                }
+            if combined_scores[doc_id]['semantic_rank'] is None:
+                combined_scores[doc_id]['semantic_rank'] = rank
+                combined_scores[doc_id]['rrf_score'] += rrf_score(rank, k)
+        
+        rrf_results = []
+        for doc_id, data in combined_scores.items():
+            result = format_search_result(doc_id, data['title'], data['document'], 
+                                          data['rrf_score'], rrf_score=data['rrf_score'], 
+                                          bm25_rank=data['bm25_rank'], semantic_rank=data['semantic_rank'])
+            rrf_results.append(result)
+        
+        return sorted(rrf_results, key=lambda x: x["score"], reverse=True)

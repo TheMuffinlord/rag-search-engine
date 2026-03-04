@@ -1,8 +1,8 @@
 import argparse
 
-from lib.hybrid_search import normalize_cmd, weighted_search_cmd
+from lib.hybrid_search import normalize_cmd, weighted_search_cmd, rrf_search_cmd
 from lib.constants import (
-    DEFAULT_SEARCH_LIMIT, DEFAULT_ALPHA_BLEND
+    DEFAULT_SEARCH_LIMIT, DEFAULT_ALPHA_BLEND, DEFAULT_RRF_K, DEFAULT_RRF_SEARCH_LIMIT
 )
 
 
@@ -18,6 +18,11 @@ def main() -> None:
     weighted_search_parser.add_argument('--alpha', type=float, nargs="?", default=DEFAULT_ALPHA_BLEND, help=f"Alpha blending value. Default {DEFAULT_ALPHA_BLEND}.")
     weighted_search_parser.add_argument('--limit', type=int, nargs="?", default=DEFAULT_SEARCH_LIMIT, help=f"Limit of search results. Default {DEFAULT_SEARCH_LIMIT}.")
 
+    rrf_search_parser = subparsers.add_parser("rrf-search", help="Performes a search using reciprocal rank fusion.")
+    rrf_search_parser.add_argument('query', type=str, help="Query to search.")
+    rrf_search_parser.add_argument('--k', type=int, default=DEFAULT_RRF_K, help=f"K-value to use when searching. Default {DEFAULT_RRF_K}.")
+    rrf_search_parser.add_argument('--limit', type=int, default=DEFAULT_RRF_SEARCH_LIMIT, help=f"Same limit argument as always. Default {DEFAULT_RRF_SEARCH_LIMIT}.")
+
     args = parser.parse_args()
 
     match args.command:
@@ -25,6 +30,8 @@ def main() -> None:
             normalize_cmd(args.numbers)
         case "weighted-search":
             weighted_search_cmd(args.query, args.alpha, args.limit)
+        case "rrf-search":
+            rrf_search_cmd(args.query, args.k, args.limit)
         case _:
             parser.print_help()
 
