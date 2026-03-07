@@ -1,5 +1,9 @@
 import os
 
+from dotenv import load_dotenv
+from google import genai
+
+
 from .semantic_search import ChunkedSemanticSearch
 from .inverted_index import InvertedIndex
 from .word_actions import load_movies, format_search_result
@@ -56,9 +60,29 @@ def weighted_search_cmd(query, alpha = DEFAULT_ALPHA_BLEND, limit = DEFAULT_SEAR
         print(f"   BM25: {result['metadata']['bm25_score']:.4f}, Semantic: {result['metadata']['semantic_score']:.4f}")
         print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
 
-def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT):
+def spellcheck_module(query):
+    load_dotenv()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(model="gemma-3-27b-it", 
+        contents=f"""Fix any spelling errors in the user-provided movie search query below.
+        Correct only clear, high-confidence typos. Do not rewrite, add, remove, or reorder words.
+        Preserve punctuation and capitalization unless a change is required for a typo fix.
+        If there are no spelling errors, or if you're unsure, output the original query unchanged.
+        Output only the final query text, nothing else.
+        User query: "{query}"
+        """)
+    output = response.text
+    print(f"Enhanced query (spell): '{query}' -> '{output}'")
+    return output
+
+def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=""):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
+    if enhance == "spell":
+        query = spellcheck_module(query)
     rrf_results = hybrid_search.rrf_search(query, k, limit)
     print(f"Displaying {limit} results:")
     for i, result in enumerate(rrf_results):
@@ -176,3 +200,4 @@ class HybridSearch:
             rrf_results.append(result)
         
         return sorted(rrf_results, key=lambda x: x["score"], reverse=True)
+    
