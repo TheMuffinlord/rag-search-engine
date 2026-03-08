@@ -78,11 +78,43 @@ def spellcheck_module(query):
     print(f"Enhanced query (spell): '{query}' -> '{output}'")
     return output
 
+def rewrite_module(query):
+    load_dotenv()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(model="gemma-3-27b-it", contents=f"""Rewrite the user-provided movie search query below to be more specific and searchable.
+
+        Consider:
+        - Common movie knowledge (famous actors, popular films)
+        - Genre conventions (horror = scary, animation = cartoon)
+        - Keep the rewritten query concise (under 10 words)
+        - It should be a Google-style search query, specific enough to yield relevant results
+        - Don't use boolean logic
+
+        Examples:
+        - "that bear movie where leo gets attacked" -> "The Revenant Leonardo DiCaprio bear attack"
+        - "movie about bear in london with marmalade" -> "Paddington London marmalade"
+        - "scary movie with bear from few years ago" -> "bear horror movie 2015-2020"
+
+        If you cannot improve the query, output the original unchanged.
+        Output only the rewritten query text, nothing else.
+
+        User query: "{query}"
+        """)
+    output = response.text
+    print(f"Enhanced query (rewrite): '{query}' -> '{output}'")
+    return output
+
 def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=""):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
-    if enhance == "spell":
-        query = spellcheck_module(query)
+    match enhance:
+        case "spell":
+            query = spellcheck_module(query)
+        case "rewrite":
+            query = rewrite_module(query)
     rrf_results = hybrid_search.rrf_search(query, k, limit)
     print(f"Displaying {limit} results:")
     for i, result in enumerate(rrf_results):
