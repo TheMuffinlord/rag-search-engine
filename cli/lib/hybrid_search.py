@@ -107,6 +107,30 @@ def rewrite_module(query):
     print(f"Enhanced query (rewrite): '{query}' -> '{output}'")
     return output
 
+
+def expand_module(query):
+    load_dotenv()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(model="gemma-3-27b-it", contents=f"""Expand the user-provided movie search query below with related terms.
+
+        Add synonyms and related concepts that might appear in movie descriptions.
+        Keep expansions relevant and focused.
+        Output only the additional terms; they will be appended to the original query.
+
+        Examples:
+        - "scary bear movie" -> "scary horror grizzly bear movie terrifying film"
+        - "action movie with bear" -> "action thriller bear chase fight adventure"
+        - "comedy with bear" -> "comedy funny bear humor lighthearted"
+
+        User query: "{query}"
+        """)
+    output = response.text
+    print(f"Enhanced query (expand): '{query}' -> '{output}'")
+    return output
+
 def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=""):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
@@ -115,6 +139,8 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
             query = spellcheck_module(query)
         case "rewrite":
             query = rewrite_module(query)
+        case "expand":
+            query = expand_module(query)
     rrf_results = hybrid_search.rrf_search(query, k, limit)
     print(f"Displaying {limit} results:")
     for i, result in enumerate(rrf_results):
