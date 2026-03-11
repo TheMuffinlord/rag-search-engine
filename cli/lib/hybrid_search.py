@@ -1,4 +1,4 @@
-import os
+import os, time
 
 from dotenv import load_dotenv
 from google import genai
@@ -131,7 +131,36 @@ def expand_module(query):
     print(f"Enhanced query (expand): '{query}' -> '{output}'")
     return output
 
-def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=""):
+def individual_rerank(query, results):
+    load_dotenv()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
+    client = genai.Client(api_key=api_key)
+    llm_scores = []
+    print("Reranking results. This may take some time.")
+    for result in results:
+        response = client.models.generate_content(model="gemma-3-27b-it", contents=f"""Rate how well this movie matches the search query.
+
+            Query: "{query}"
+            Movie: {result["title"]} - {result['document'][:RETURN_DOCUMENT_LIMIT]}
+
+            Consider:
+            - Direct relevance to query
+            - User intent (what they're looking for)
+            - Content appropriateness
+
+            Rate 0-10 (10 = perfect match).
+            Output ONLY the number in your response, no other text or explanation.
+
+            Score:""")
+        llm_scores.append((result, response.text))
+        time.sleep(3)
+    llm_scores_sorted = sorted(llm_scores, key=lambda item: item[1], reverse=True)
+    return llm_scores_sorted
+        
+
+def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=None, rerank=None):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
     match enhance:
@@ -142,13 +171,24 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
         case "expand":
             query = expand_module(query)
     rrf_results = hybrid_search.rrf_search(query, k, limit)
-    print(f"Displaying {limit} results:")
-    for i, result in enumerate(rrf_results):
-        #print(result)
-        print(f"{i+1}. {result['title']}, ID: {result['id']}")
-        print(f"   RRF Score: {result['score']:.4f}")
-        print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
-        print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
+    match rerank:
+        case "individual":
+            rrf_results = individual_rerank(query, rrf_results)
+            print(f"Reranking top {limit} results using individual method:")
+            for i, result in enumerate(rrf_results):
+                print(f"{i+1}. {result[0]['title']}, ID: {result[0]['id']}")
+                print(f"   Re-rank score: {result[1]}/10")
+                print(f"   RRF Score: {result[0]['score']:.4f}")
+                print(f"   BM25 Rank: {result[0]['metadata']['bm25_rank']}, Semantic Rank: {result[0]['metadata']['semantic_rank']}")
+                print(f"   {result[0]['document'][:RETURN_DOCUMENT_LIMIT]}")
+        case None:
+            print(f"Displaying {limit} results:")
+            for i, result in enumerate(rrf_results):
+                #print(result)
+                print(f"{i+1}. {result['title']}, ID: {result['id']}")
+                print(f"   RRF Score: {result['score']:.4f}")
+                print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
+                print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
 
 
 class HybridSearch:
