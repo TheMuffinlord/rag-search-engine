@@ -1,7 +1,8 @@
-import os, time
+import os, time, json
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 
 from .semantic_search import ChunkedSemanticSearch
@@ -159,6 +160,55 @@ def individual_rerank(query, results):
     llm_scores_sorted = sorted(llm_scores, key=lambda item: item[1], reverse=True)
     return llm_scores_sorted
         
+def batch_rerank(query, results):
+    load_dotenv()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
+    client = genai.Client(api_key=api_key)
+    
+    print("Reranking results. This may take some time.")
+    docs_list = []
+    for result in results:
+        docs_list.append(f"{result['id']}: {result['title']} - {result['document'][:200]}")
+    rerank_string = "\n".join(docs_list)
+    #print(f"DEBUG: rerank string: {rerank_string}")
+    response = client.models.generate_content(model="gemma-3-27b-it", contents=f"""Rank the movies listed below by relevance to the following search query.
+
+        Query: "{query}"
+
+        Movies:
+        {rerank_string}
+
+        Return ONLY the movie IDs in order of relevance (best match first). Return a valid JSON list, nothing else.
+
+        For example:
+        [75, 12, 34, 2, 1]
+
+        Ranking:""", 
+        )
+    #print(f"DEBUG: response text: {response.text}")
+    rank_text = (response.text or "").strip()
+    llm_rank_list = json.loads(rank_text)
+    llm_response = []
+    for rank, position in enumerate(llm_rank_list):
+        cor_movie = list(filter(lambda item: item['id'] == position, results))[0]
+        #print(f"DEBUG: {cor_movie}")
+        
+        response = format_search_result(
+            doc_id=cor_movie['id'],
+            title=cor_movie['title'],
+            document=cor_movie['document'],
+            score=(cor_movie['score'] or None),
+            rrf_score=(cor_movie['metadata']['rrf_score'] or None),
+            bm25_rank=(cor_movie['metadata']['bm25_rank'] or None),
+            semantic_rank=(cor_movie['metadata']['semantic_rank'] or None),
+            rerank_score=rank
+        )
+        llm_response.append(response)
+    return sorted(llm_response, key=lambda item: item['metadata']['rerank_score'])
+    
+
 
 def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=None, rerank=None):
     documents = load_movies()
@@ -170,20 +220,32 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
             query = rewrite_module(query)
         case "expand":
             query = expand_module(query)
-    rrf_results = hybrid_search.rrf_search(query, k, limit)
+    
     match rerank:
         case "individual":
+            rrf_results = hybrid_search.rrf_search(query, k, limit * 5)
             rrf_results = individual_rerank(query, rrf_results)
             print(f"Reranking top {limit} results using individual method:")
-            for i, result in enumerate(rrf_results):
+            for i, result in enumerate(rrf_results[:limit]):
                 print(f"{i+1}. {result[0]['title']}, ID: {result[0]['id']}")
-                print(f"   Re-rank score: {result[1]}/10")
+                print(f"   Re-rank score: {result[1]}/{limit}")
                 print(f"   RRF Score: {result[0]['score']:.4f}")
                 print(f"   BM25 Rank: {result[0]['metadata']['bm25_rank']}, Semantic Rank: {result[0]['metadata']['semantic_rank']}")
                 print(f"   {result[0]['document'][:RETURN_DOCUMENT_LIMIT]}")
+        case "batch":
+            rrf_results = hybrid_search.rrf_search(query, k, limit * 5)
+            batch_results = batch_rerank(query, rrf_results)
+            print(f"Reranking top {limit} results using batch method:")
+            #for i, result in enumerate(batch_results[:limit]):
+            for i, result in enumerate(batch_results):
+                print(f"{i+1}. {result['title']}, ID: {result['id']}")
+                print(f"   Re-rank score: {result['metadata']['rerank_score']+1}/{limit}")
+                print(f"   RRF Score: {result['score']:.4f}")
+                print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
+                print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}\n")
         case None:
             print(f"Displaying {limit} results:")
-            for i, result in enumerate(rrf_results):
+            for i, result in enumerate(rrf_results[:limit]):
                 #print(result)
                 print(f"{i+1}. {result['title']}, ID: {result['id']}")
                 print(f"   RRF Score: {result['score']:.4f}")
