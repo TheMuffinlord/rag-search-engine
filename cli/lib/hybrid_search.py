@@ -236,8 +236,8 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
             rrf_results = hybrid_search.rrf_search(query, k, limit * 5)
             batch_results = batch_rerank(query, rrf_results)
             print(f"Reranking top {limit} results using batch method:")
-            #for i, result in enumerate(batch_results[:limit]):
-            for i, result in enumerate(batch_results):
+            for i, result in enumerate(batch_results[:limit]):
+            #for i, result in enumerate(batch_results):
                 print(f"{i+1}. {result['title']}, ID: {result['id']}")
                 print(f"   Re-rank score: {result['metadata']['rerank_score']+1}/{limit}")
                 print(f"   RRF Score: {result['score']:.4f}")
