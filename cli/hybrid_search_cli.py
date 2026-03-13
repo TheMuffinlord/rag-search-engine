@@ -23,7 +23,7 @@ def main() -> None:
     rrf_search_parser.add_argument('--k', type=int, default=DEFAULT_RRF_K, help=f"K-value to use when searching. Default {DEFAULT_RRF_K}.")
     rrf_search_parser.add_argument('--limit', type=int, default=DEFAULT_RRF_SEARCH_LIMIT, help=f"Same limit argument as always. Default {DEFAULT_RRF_SEARCH_LIMIT}.")
     rrf_search_parser.add_argument('--enhance', type=str, choices=['spell', 'rewrite', 'expand'], required=False, help="Processes your search input using an LLM. Available methods: spell")
-    rrf_search_parser.add_argument('--rerank-method', type=str, choices=['individual', 'batch'], required=False, help="Defines an optional reranking method.")
+    rrf_search_parser.add_argument('--rerank-method', type=str, choices=['individual', 'batch', 'cross_encoder'], required=False, help="Defines an optional reranking method.")
 
     args = parser.parse_args()
 
