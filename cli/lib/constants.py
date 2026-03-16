@@ -20,6 +20,7 @@ SCORE_PRECISION = 4
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(PROJECT_ROOT, 'data', 'movies.json')
 STOPWORDS_PATH = os.path.join(PROJECT_ROOT, 'data', 'stopwords.txt')
+GOLDEN_PATH = os.path.join(PROJECT_ROOT, 'data', 'golden_dataset.json') #HAIL CHINGGHIS
 
 CACHE_DIR = os.path.join(PROJECT_ROOT, 'cache')
 

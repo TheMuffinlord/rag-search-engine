@@ -7,6 +7,7 @@ import argparse, math
 from lib.word_actions import *
 from lib.inverted_index import InvertedIndex
 from lib.constants import BM25_K1, BM25_B
+from lib.word_actions import separator, stemmer, stripper
 
 DEFAULT_SEARCH_LIMIT = 5
 
@@ -94,6 +95,9 @@ def main() -> None:
     bm25search_parser.add_argument("query", type=str, help="Search query")
     bm25search_parser.add_argument("limit", type=int, nargs='?', default=5, help="Limit of results to return")
 
+    testkeyword_parser = subparsers.add_parser("test", help="Tests keyword search formatting")
+    testkeyword_parser.add_argument('query', type=str, help="test query")
+
     movieDB = InvertedIndex()
 
     args = parser.parse_args()
@@ -149,6 +153,13 @@ def main() -> None:
             i = 0
             for i, res in enumerate(results, 1):
                 print(f"{i}. ({res['id']}) {res['title']} - Score: {res['score']:.2f}")
+        case "test":
+            stripped_query = stripper(args.query)
+            print(f"Stripped query: {stripped_query}")
+            stem_query = stemmer(args.query)
+            print(f"Stemmed query: {stem_query}")
+            separated_query = separator(args.query)
+            print(f"Separated query: {separated_query}")
         case _:
             parser.print_help()
 

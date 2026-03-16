@@ -82,6 +82,8 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
             query = rewrite_module(query)
         case "expand":
             query = expand_module(query)
+        case None:
+            pass
     
     match rerank:
         case "individual":
@@ -116,6 +118,7 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
                 print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}\n")
         case None:
+            rrf_results = hybrid_search.rrf_search(query, k, limit)
             print(f"Displaying {limit} results:")
             for i, result in enumerate(rrf_results[:limit]):
                 #print(result)

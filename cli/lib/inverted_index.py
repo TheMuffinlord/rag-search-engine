@@ -75,7 +75,9 @@ class InvertedIndex:
         term = separator(term)
         if len(term) > 1:
             raise Exception('multiple terms unsupported')
-        return len(self.index[term[0]])
+        if term[0] in self.index.keys():
+            return len(self.index[term[0]]) 
+        return 0
 
     def get_tf(self, doc_id, term):
         term = separator(term)
