@@ -1,17 +1,16 @@
 from .word_actions import *
 from .constants import CACHE_DIR, BM25_K1, BM25_B
-from itertools import islice
 
 import pickle, os, collections, math
 
 
 class InvertedIndex:
     def __init__(self):
-        self.index = {}
-        self.docmap = {}
+        self.index = collections.defaultdict(set)
+        self.docmap: dict[int, dict] = {}
         self.index_path = os.path.join(CACHE_DIR, 'index.pkl')
         self.docmap_path = os.path.join(CACHE_DIR, 'docmap.pkl')
-        self.term_frequencies = {}
+        self.term_frequencies = collections.defaultdict(collections.Counter)
         self.freq_path = os.path.join(CACHE_DIR, 'term_frequencies.pkl')
         self.doc_lengths = {}
         self.doc_lengths_path = os.path.join(CACHE_DIR, 'doc_lengths.pkl')
@@ -19,19 +18,26 @@ class InvertedIndex:
     def __add_document(self, doc_id, text):
         text = separator(text)
         word_list = []
-        self.doc_lengths[doc_id] = len(text)
         for word in text:
             word_list.append(word)
             if word not in self.index:
                 self.index[word] = {doc_id}
             else:
                 self.index[word].add(doc_id)
-        self.term_frequencies[doc_id] = collections.Counter(word_list)
+        self.term_frequencies[doc_id].update(word_list)
+        self.doc_lengths[doc_id] = len(word_list)
 
-    def __get_avg_doc_length(self) -> float:
-        if len(self.doc_lengths) > 0:
+    def __get_avg_doc_length(self) -> float: 
+        #CH9.4: replacing with solution code; is this where it's eating shit??
+        '''if len(self.doc_lengths) > 0:
             return sum(self.doc_lengths.values()) / len(self.doc_lengths)
-        return 0.0
+        return 0.0'''
+        if not self.doc_lengths or len(self.doc_lengths) == 0:
+            return 0.0
+        total_length = 0
+        for length in self.doc_lengths.values():
+            total_length += length
+        return total_length / len(self.doc_lengths)
         
 
     def get_documents(self, term: str):
@@ -71,13 +77,13 @@ class InvertedIndex:
         else:
             raise Exception('uninitialized movieDB index')
 
-    def get_df(self, term):
-        term = separator(term)
-        if len(term) > 1:
+    """ def get_df(self, term): #i don't know what the purpose of this was but it shouldn't be necessary
+        tokens = separator(term)
+        if len(tokens) > 1:
             raise Exception('multiple terms unsupported')
-        if term[0] in self.index.keys():
-            return len(self.index[term[0]]) 
-        return 0
+        if tokens[0] in self.index.keys():
+            return len(self.index[tokens[0]]) 
+        return 0 """
 
     def get_tf(self, doc_id, term):
         term = separator(term)
@@ -86,24 +92,46 @@ class InvertedIndex:
         term_counts = self.term_frequencies[doc_id]
         return term_counts[term[0]]
         
-    def get_bm25_idf(self, term: str) -> float:
-        term = separator(term)
-        if len(term) > 1:
-            raise Exception('multiple terms unsupported')
+    def get_idf(self, term):
+        tokens = separator(term)
+        if len(tokens) != 1:
+            raise ValueError('one term per idf')
+        token = tokens[0]
         num_docs = len(self.docmap)
-        doc_freq = self.get_df(term[0])
-        return math.log((num_docs - doc_freq + 0.5) / (doc_freq + 0.5) + 1)
+        if token in self.index.keys():
+            doc_freq = len(self.index[token])
+        else:
+            doc_freq = 0
+        return math.log((num_docs + 1) / (doc_freq + 1))
     
-    def get_bm25_tf(self, doc_id, term, k1=BM25_K1, b=BM25_B):
+    def get_bm25_idf(self, term: str) -> float:
+        tokens = separator(term)
+        if len(tokens) > 1:
+            raise Exception('multiple terms unsupported')
+        token = tokens[0]
+        num_docs = len(self.docmap)
+        if token in self.index.keys():
+            doc_freq = len(self.index[token])
+        else:
+            doc_freq = 0
+        return math.log((num_docs - doc_freq + 0.5) / (doc_freq + 0.5) + 1) #math matches the solution files as of chapter 9
+    
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1, b=BM25_B): 
+        #CH9.4 updated; i think this just safeguards against /0 errors?
         tf = self.get_tf(doc_id, term)
+        this_doc_length = self.doc_lengths.get(doc_id, 0)
         avg_doc_length = self.__get_avg_doc_length()
-        length_norm = 1 - b + b * (self.doc_lengths[doc_id] / avg_doc_length)
+        if avg_doc_length > 0:
+            length_norm = 1 - b + b * (this_doc_length / avg_doc_length)
+        else:
+            length_norm = 1
         #print(f"DEBUG: document length is {self.doc_lengths[doc_id]}, average is {avg_doc_length}, length norm should be {length_norm}.")
         term_freq = (tf * (k1 + 1)) / (tf + k1 * length_norm)
         #print(f"DEBUG: term frequency should be {term_freq}. calculated as ({tf} * ({k1} + 1 )) / ({tf} + {k1} * {length_norm}).")
         return term_freq
     
     def bm25(self, doc_id, term):
+        #CH9.4 looks the exact same
         idf = self.get_bm25_idf(term)
         tf = self.get_bm25_tf(doc_id, term)
         return tf * idf
@@ -112,13 +140,17 @@ class InvertedIndex:
         tokens = separator(query)
         score_matches = {}
         for document in self.docmap:
-            #print(document)
-            if document not in score_matches:
+            score = 0.0
+            #CH9.4 cleaned up to match solution. using a += saves you running into key errors
+            for token in tokens:
+                score += self.bm25(document, token)
+            score_matches[document] = score
+            '''if document not in score_matches:
                 score_matches[document] = 0
             for token in tokens:
                 #print(token)
                 score_matches[document] += self.bm25(document, token)
-                #print(score_matches[document])
+                #print(score_matches[document])'''
         #print(score_matches)
         sorted_scores = sorted(score_matches.items(), key=lambda item: item[1], reverse=True)
         #okay fuck this apparently i fucked it

@@ -2,7 +2,7 @@ import argparse, json
 
 from lib.hybrid_search import HybridSearch
 from lib.semantic_search import SemanticSearch
-from lib.word_actions import load_movies, format_search_result
+from lib.word_actions import load_movies
 from lib.constants import (
     GOLDEN_PATH,
 )
@@ -30,11 +30,17 @@ def recall_at_k(retrieved, relevant, k):
     print(f"DEBUG: recall math: {relevant_count} / {len(relevant)} = {relevant_count/len(relevant):.4f}")
     return relevant_count / len(relevant)
 
+def f1_score(precision, recall):
+    if precision != 0 or recall != 0:
+        return 2 * (precision * recall) / (precision + recall) 
+    return 0.0
+
 def format_case_result(query: str, precision, recall: float, retrieved, relevant: list):
     return {
         'query': query,
         'precision': precision,
         'recall': recall,
+        'f1_score': f1_score(precision, recall),
         'retrieved': retrieved,
         'relevant': relevant
     }
@@ -68,7 +74,7 @@ def main():
         case_docs = set(case['relevant_docs'])
         for result in results:
             title = result['title']
-            if title and title not in retrieved_titles:
+            if title: #and title not in retrieved_titles:
                 retrieved_titles.append(title)
             """ if result['title'] in case_docs and result['title'] not in relevant_titles:
             #if result['title'] in case['relevant_docs']:
@@ -93,6 +99,7 @@ def main():
         else:
             print(f"  - Precision@{limit}: {case_result['precision']:.4f}")
             print(f"  - Recall@{limit}: {case_result['recall']:.4f}")
+        print(f"  - F1 Score: {case_result['f1_score']:.4f}")
         print(f"  - Retrieved: {', '.join(case_result['retrieved'])}")
         print(f"  - Relevant: {', '.join(case_result['relevant'])}")
         print()
