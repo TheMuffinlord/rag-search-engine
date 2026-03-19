@@ -1,0 +1,71 @@
+results at limit 4 as of latest commit:
+
+- Query: cute british bear marmalade
+  - Precision@4: 0.2500
+  - Recall@4: 1.0000
+  - F1 Score: 0.4000
+  - Retrieved: Paddington, Penguins of Madagascar, The Queen, The Graves
+  - Relevant: Paddington
+
+- Query: talking teddy bear comedy
+  - Precision@4: 0.5000
+  - Recall@4: 1.0000
+  - F1 Score: 0.6667
+  - Retrieved: Ted, The Bear, Littleman, Ted 2
+  - Relevant: Ted, Ted 2
+
+- Query: children's animated bear adventure
+  - Precision@4: 1.0000
+  - Recall@4: 0.3077
+  - F1 Score: 0.4706
+  - Retrieved: The Little Polar Bear 2: The Mysterious Island, Care Bears Nutcracker Suite, The Little Polar Bear, Open Season
+  - Relevant: The Jungle Book, The Care Bears Movie, The Little Polar Bear, The Country Bears, Open Season, Brother Bear, The Little Polar Bear 2: The Mysterious Island, Care Bears Movie II: A New Generation, The Many Adventures of Winnie the Pooh, Care Bears Nutcracker Suite, The Berenstain Bears' Christmas Tree, Winnie the Pooh, Yogi Bear
+
+- Query: friendship transformation magic with bears
+  - Precision@4: 0.2500
+  - Recall@4: 0.3333
+  - F1 Score: 0.2857
+  - Retrieved: The Care Bears Movie, The Bear, Brave, Ted
+  - Relevant: The Jungle Book, The Care Bears Movie, Brother Bear
+
+- Query: dinosaur park
+  - Precision@4: 0.2500
+  - Recall@4: 1.0000
+  - F1 Score: 0.4000
+  - Retrieved: Jurassic Park, The Wizard, Lost River, Anonymous Rex
+  - Relevant: Jurassic Park
+
+- Query: wizards and magic
+  - Precision@4: 0.2500
+  - Recall@4: 0.1111
+  - F1 Score: 0.1538
+  - Retrieved: Winx Club: Il segreto del Regno Perduto, Troll, Doctor Mordrid, Oz the Great and Powerful
+  - Relevant: Harry Potter and the Prisoner of Azkaban, The Lord of the Rings: The Fellowship of the Ring, The Sword in the Stone, Harry Potter and the Order of the Phoenix, Harry Potter and the Goblet of Fire, Harry Potter and the Deathly Hallows: Part 1, Harry Potter and the Deathly Hallows: Part 2, Harry Potter and the Sorcerer's Stone, Oz the Great and Powerful
+
+- Query: superhero saves the world
+  - Precision@4: 0.5000
+  - Recall@4: 0.2500
+  - F1 Score: 0.3333
+  - Retrieved: Griff the Invisible, Kick-Ass, Megamind, Justice League: Throne of Atlantis
+  - Relevant: Superman II, Megamind, Kick-Ass, Sky High, Up, Up, and Away!, Superman/Batman: Public Enemies, Justice League: The Flashpoint Paradox, The Incredibles
+
+- Query: zombie apocalypse
+  - Precision@4: 0.2500
+  - Recall@4: 0.1250
+  - F1 Score: 0.1667
+  - Retrieved: Zombies! Zombies! Zombies!, Plane Dead, Le notti del terrore, Shaun of the Dead
+  - Relevant: Resident Evil: Apocalypse, Colin, Dance of the Dead, Død snø, Pride and Prejudice and Zombies, Shaun of the Dead, The Return of the Living Dead, I Am Legend
+
+- Query: car racing
+  - Precision@4: 0.7500
+  - Recall@4: 0.4286
+  - F1 Score: 0.5455
+  - Retrieved: Need for Speed, Rush, Talladega Nights: The Ballad of Ricky Bobby, The Brown Bunny
+  - Relevant: Cars, Rush, Talladega Nights: The Ballad of Ricky Bobby, The Love Bug, Furious Seven, Need for Speed, The Fast and the Furious
+
+- Query: romantic comedy wedding
+  - Precision@4: 0.0000
+  - Recall@4: 0.0000
+  - F1 Score: 0.0000
+  - Retrieved: The Colgate Comedy Hour, Bird of Paradise, Mistress, They Won't Believe Me
+  - Relevant: The Wedding Planner, Runaway Bride, Wedding Crashers, The Accidental Husband, You, Me and Dupree, Just Go with It, 27 Dresses
