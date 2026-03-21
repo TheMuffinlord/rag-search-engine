@@ -138,8 +138,6 @@ class InvertedIndex:
     
     def bm25_search(self, query, limit=5, debug = False):
         tokens = separator(query)
-        if debug == True:
-            print(f"DEBUG: BM25 tokens: {tokens}")
         score_matches = {}
         for document in self.docmap:
             score = 0.0
@@ -155,6 +153,8 @@ class InvertedIndex:
                 #print(score_matches[document])'''
         #print(score_matches)
         sorted_scores = sorted(score_matches.items(), key=lambda item: item[1], reverse=True)
+        if debug == True:
+            print(f"DEBUG: sorted scores up until the limit: {sorted_scores[:limit]}")
         #okay fuck this apparently i fucked it
         #return {k: v for i, (k, v) in enumerate(score_matches.items()) if i < limit}
         results = []

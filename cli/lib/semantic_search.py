@@ -233,8 +233,6 @@ class ChunkedSemanticSearch(SemanticSearch):
 
     def search_chunk(self, query:str, limit: int = DEFAULT_CHUNK_SEARCH_LIMIT, debug = False):
         query_embedding = self.generate_embedding(query)
-        if debug == True:
-            print(f"DEBUG: Query embedding: {query_embedding}")
         chunk_scores = []
         for i, chunk_embedding in enumerate(self.chunk_embeddings):
             c_score = cosine_similarity(query_embedding, chunk_embedding)
@@ -246,6 +244,8 @@ class ChunkedSemanticSearch(SemanticSearch):
             if (movie_index not in movie_score_map or movie_score_map[movie_index] < chunk_score['score']):
                 movie_score_map[movie_index] = chunk_score['score']
         sorted_movies = sorted(movie_score_map.items(), key=lambda item: item[1], reverse=True)
+        if debug == True:
+            print(f"DEBUG: sorted movies from chunked search: {sorted_movies[:limit]}")
         sorted_scores = []
         #CH9.4 more cleanup. 
         for d, score in sorted_movies[:limit]:
