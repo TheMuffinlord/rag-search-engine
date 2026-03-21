@@ -72,7 +72,7 @@ def weighted_search_cmd(query, alpha = DEFAULT_ALPHA_BLEND, limit = DEFAULT_SEAR
     
 
 
-def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=None, rerank=None):
+def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=None, rerank=None, debug=False):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
     match enhance:
@@ -87,17 +87,31 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
     
     match rerank:
         case "individual":
-            rrf_results = hybrid_search.rrf_search(query, k, limit * 5)
-            rrf_results = individual_rerank(query, rrf_results)
+            rrf_results = hybrid_search.rrf_search(query, k, limit * 5, debug)
+            if debug == True:
+                print(f"DEBUG: Displaying {limit * 5} pre-enhancement results:")
+                for i, result in enumerate(rrf_results[:limit * 5]):
+                    print(f"{i+1}. {result['title']}, ID: {result['id']}")
+                    print(f"   RRF Score: {result['score']:.4f}")
+                    print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
+                    print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
+            ir_results = individual_rerank(query, rrf_results)
             print(f"Reranking top {limit} results using individual method:")
-            for i, result in enumerate(rrf_results[:limit]):
+            for i, result in enumerate(ir_results[:limit]):
                 print(f"{i+1}. {result[0]['title']}, ID: {result[0]['id']}")
                 print(f"   Re-rank score: {result[1]}/{limit}")
                 print(f"   RRF Score: {result[0]['score']:.4f}")
                 print(f"   BM25 Rank: {result[0]['metadata']['bm25_rank']}, Semantic Rank: {result[0]['metadata']['semantic_rank']}")
                 print(f"   {result[0]['document'][:RETURN_DOCUMENT_LIMIT]}")
         case "batch":
-            rrf_results = hybrid_search.rrf_search(query, k, limit * 5)
+            rrf_results = hybrid_search.rrf_search(query, k, limit * 5, debug)
+            if debug == True:
+                print(f"DEBUG: Displaying {limit * 5} pre-enhancement results:")
+                for i, result in enumerate(rrf_results[:limit * 5]):
+                    print(f"{i+1}. {result['title']}, ID: {result['id']}")
+                    print(f"   RRF Score: {result['score']:.4f}")
+                    print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
+                    print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
             batch_results = batch_rerank(query, rrf_results)
             print(f"Reranking top {limit} results using batch method:")
             for i, result in enumerate(batch_results[:limit]):
@@ -108,7 +122,14 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
                 print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}\n")
         case "cross_encoder":
-            rrf_results = hybrid_search.rrf_search(query, k, limit * 5)
+            rrf_results = hybrid_search.rrf_search(query, k, limit * 5, debug)
+            if debug == True:
+                print(f"DEBUG: Displaying {limit * 5} pre-enhancement results:")
+                for i, result in enumerate(rrf_results[:limit * 5]):
+                    print(f"{i+1}. {result['title']}, ID: {result['id']}")
+                    print(f"   RRF Score: {result['score']:.4f}")
+                    print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
+                    print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
             print(f"Reranking top {limit} results using cross encoding method:")
             cross_results = cross_encoder_rerank(query, rrf_results)
             for i, result in enumerate(cross_results[:limit]):
@@ -118,7 +139,7 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
                 print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}\n")
         case None:
-            rrf_results = hybrid_search.rrf_search(query, k, limit)
+            rrf_results = hybrid_search.rrf_search(query, k, limit, debug)
             print(f"Displaying {limit} results:")
             for i, result in enumerate(rrf_results[:limit]):
                 #print(result)
@@ -139,9 +160,9 @@ class HybridSearch:
             self.inverted_index.build()
             self.inverted_index.save()
 
-    def _bm25_search(self, query, limit):
+    def _bm25_search(self, query, limit, debug = False):
         self.inverted_index.load()
-        return self.inverted_index.bm25_search(query, limit)
+        return self.inverted_index.bm25_search(query, limit, debug)
            
     
     def weighted_search(self, query, alpha, limit=DEFAULT_SEARCH_LIMIT):
@@ -194,9 +215,11 @@ class HybridSearch:
 
         
     
-    def rrf_search(self, query, k, limit=DEFAULT_RRF_SEARCH_LIMIT):
-        bm25_results = self._bm25_search(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER)
-        css_results = self.semantic_search.search_chunk(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER)
+    def rrf_search(self, query, k, limit=DEFAULT_RRF_SEARCH_LIMIT, debug=False):
+        if debug == True:
+            print(f"DEBUG: Original query: {query}")
+        bm25_results = self._bm25_search(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER, debug)
+        css_results = self.semantic_search.search_chunk(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER, debug)
         combined_scores = {}
 
         for rank, result in enumerate(bm25_results):

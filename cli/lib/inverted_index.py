@@ -136,8 +136,10 @@ class InvertedIndex:
         tf = self.get_bm25_tf(doc_id, term)
         return tf * idf
     
-    def bm25_search(self, query, limit=5):
+    def bm25_search(self, query, limit=5, debug = False):
         tokens = separator(query)
+        if debug == True:
+            print(f"DEBUG: BM25 tokens: {tokens}")
         score_matches = {}
         for document in self.docmap:
             score = 0.0

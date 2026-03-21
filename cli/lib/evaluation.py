@@ -59,6 +59,7 @@ def evaluation_cmd(limit):
             k=60,
             limit=limit
         )
+        
         #total_retrieved = len(results)
         #total_relevant = len(case['relevant_docs'])
         #relevant = len(list(filter(lambda x: x['title'] in case['relevant_docs'], results)))

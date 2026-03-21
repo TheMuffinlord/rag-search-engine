@@ -231,8 +231,10 @@ class ChunkedSemanticSearch(SemanticSearch):
         return self.build_chunk_embeddings(documents)
         
 
-    def search_chunk(self, query:str, limit: int = DEFAULT_CHUNK_SEARCH_LIMIT):
+    def search_chunk(self, query:str, limit: int = DEFAULT_CHUNK_SEARCH_LIMIT, debug = False):
         query_embedding = self.generate_embedding(query)
+        if debug == True:
+            print(f"DEBUG: Query embedding: {query_embedding}")
         chunk_scores = []
         for i, chunk_embedding in enumerate(self.chunk_embeddings):
             c_score = cosine_similarity(query_embedding, chunk_embedding)

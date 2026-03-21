@@ -24,6 +24,7 @@ def main() -> None:
     rrf_search_parser.add_argument('--limit', type=int, default=DEFAULT_RRF_SEARCH_LIMIT, help=f"Same limit argument as always. Default {DEFAULT_RRF_SEARCH_LIMIT}.")
     rrf_search_parser.add_argument('--enhance', type=str, choices=['spell', 'rewrite', 'expand'], required=False, help="Processes your search input using an LLM. Available methods: spell")
     rrf_search_parser.add_argument('--rerank-method', type=str, choices=['individual', 'batch', 'cross_encoder'], required=False, help="Defines an optional reranking method.")
+    rrf_search_parser.add_argument('--debug', type=bool, default=False, help="Enables debug output.")
 
     args = parser.parse_args()
 
@@ -33,7 +34,7 @@ def main() -> None:
         case "weighted-search":
             weighted_search_cmd(args.query, args.alpha, args.limit)
         case "rrf-search":
-            rrf_search_cmd(args.query, args.k, args.limit, args.enhance, args.rerank_method)
+            rrf_search_cmd(args.query, args.k, args.limit, args.enhance, args.rerank_method, args.debug)
         case _:
             parser.print_help()
 
