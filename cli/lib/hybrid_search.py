@@ -16,7 +16,8 @@ from .constants import (
 )
 from .enhance_and_rerank import (
     spellcheck_module, rewrite_module, expand_module,
-    batch_rerank, individual_rerank, cross_encoder_rerank
+    batch_rerank, individual_rerank, cross_encoder_rerank,
+    evaluate_results
 )
 
 def normalize(scores: list):
@@ -72,7 +73,7 @@ def weighted_search_cmd(query, alpha = DEFAULT_ALPHA_BLEND, limit = DEFAULT_SEAR
     
 
 
-def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=None, rerank=None, debug=False):
+def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, enhance=None, rerank=None, evaluate=False, debug=False):
     documents = load_movies()
     hybrid_search = HybridSearch(documents)
     match enhance:
@@ -103,6 +104,7 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   RRF Score: {result[0]['score']:.4f}")
                 print(f"   BM25 Rank: {result[0]['metadata']['bm25_rank']}, Semantic Rank: {result[0]['metadata']['semantic_rank']}")
                 print(f"   {result[0]['document'][:RETURN_DOCUMENT_LIMIT]}")
+            passthrough_results = ir_results
         case "batch":
             rrf_results = hybrid_search.rrf_search(query, k, limit * 5, debug)
             if debug == True:
@@ -121,6 +123,7 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   RRF Score: {result['score']:.4f}")
                 print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
                 print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}\n")
+            passthrough_results = batch_results
         case "cross_encoder":
             rrf_results = hybrid_search.rrf_search(query, k, limit * 5, debug)
             if debug == True:
@@ -138,6 +141,7 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   RRF Score: {result['score']:.4f}")
                 print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
                 print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}\n")
+            passthrough_results = cross_results
         case None:
             rrf_results = hybrid_search.rrf_search(query, k, limit, debug)
             print(f"Displaying {limit} results:")
@@ -147,6 +151,12 @@ def rrf_search_cmd(query, k = DEFAULT_RRF_K, limit = DEFAULT_RRF_SEARCH_LIMIT, e
                 print(f"   RRF Score: {result['score']:.4f}")
                 print(f"   BM25 Rank: {result['metadata']['bm25_rank']}, Semantic Rank: {result['metadata']['semantic_rank']}")
                 print(f"   {result['document'][:RETURN_DOCUMENT_LIMIT]}")
+            passthrough_results = rrf_results
+    if evaluate == True:
+        eval_results = evaluate_results(query, passthrough_results[:limit])
+        print("Evaluation report:")
+        for i, result in enumerate(eval_results[:limit], 1):
+            print(f"{i}. {result['title']}: {result['metadata']['evaluation_rank']}/3")
 
 
 class HybridSearch:

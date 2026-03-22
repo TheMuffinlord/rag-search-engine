@@ -183,3 +183,55 @@ def cross_encoder_rerank(query, results):
         )
         cross_response.append(response)
     return sorted(cross_response, key=lambda item: item['metadata']['rerank_score'], reverse=True)
+
+def evaluate_results(query, results):
+    load_dotenv()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
+    client = genai.Client(api_key=api_key)
+    
+    print("Evaluating results. This may take some time.")
+    docs_list = []
+    for result in results:
+        docs_list.append(f"{result['id']}: {result['title']} - {result['document'][:200]}")
+    rerank_string = "\n".join(docs_list)
+    #print(f"DEBUG: rerank string: {rerank_string}")
+    content_string = f"""Rate how relevant each result is to this query on a 0-3 scale:
+
+        Query: "{query}"
+
+        Results:
+        {rerank_string}
+
+        Scale:
+        - 3: Highly relevant
+        - 2: Relevant
+        - 1: Marginally relevant
+        - 0: Not relevant
+
+        Do NOT give any numbers other than 0, 1, 2, or 3.
+
+        Return ONLY the scores in the same order you were given the documents. Return a valid JSON list, nothing else. For example:
+
+        [2, 0, 3, 2, 0, 1]"""
+    #print(f"DEBUG: content string: {content_string}\n\nlength: {len(content_string)}")
+    response = client.models.generate_content(model="gemma-3-27b-it", contents=content_string)
+    
+    rank_text = (response.text or "").strip()
+    llm_rank_list = json.loads(rank_text)
+    llm_response = []
+    for position, rank in enumerate(llm_rank_list):
+        cor_movie = results[position]
+        response = format_search_result(
+            doc_id=cor_movie['id'],
+            title=cor_movie['title'],
+            document=cor_movie['document'],
+            score=(cor_movie['score'] or None),
+            rrf_score=(cor_movie['metadata']['rrf_score'] or None),
+            bm25_rank=(cor_movie['metadata']['bm25_rank'] or None),
+            semantic_rank=(cor_movie['metadata']['semantic_rank'] or None),
+            evaluation_rank=rank
+        )
+        llm_response.append(response)
+    return llm_response
