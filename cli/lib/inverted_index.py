@@ -1,5 +1,5 @@
 from .word_actions import *
-from .constants import CACHE_DIR, BM25_K1, BM25_B
+from .constants import CACHE_DIR, BM25_K1, BM25_B, RETURN_DOCUMENT_LIMIT
 
 import pickle, os, collections, math
 
@@ -138,6 +138,8 @@ class InvertedIndex:
     
     def bm25_search(self, query, limit=5, debug = False):
         tokens = separator(query)
+        if debug:
+            print(f"DEBUG: tokens: {tokens}")
         score_matches = {}
         for document in self.docmap:
             score = 0.0
@@ -153,13 +155,18 @@ class InvertedIndex:
                 #print(score_matches[document])'''
         #print(score_matches)
         sorted_scores = sorted(score_matches.items(), key=lambda item: item[1], reverse=True)
-        if debug == True:
-            print(f"DEBUG: sorted scores up until the limit: {sorted_scores[:limit]}")
+        
         #okay fuck this apparently i fucked it
         #return {k: v for i, (k, v) in enumerate(score_matches.items()) if i < limit}
         results = []
         for doc_id, score in sorted_scores[:limit]:
             doc = self.docmap[doc_id]
-            formatted_result = format_search_result(doc['id'], doc['title'], doc['description'], score)
+            formatted_result = format_search_result(doc['id'], doc['title'], doc['description'][:RETURN_DOCUMENT_LIMIT], score)
+            if debug: 
+                print(f"DEBUG: bm25 result: {formatted_result}")
+                kg = input("Press Enter to continue...")
+                if kg:
+                    debug = False
             results.append(formatted_result)
+        
         return results

@@ -225,16 +225,19 @@ class HybridSearch:
 
         
     
-    def rrf_search(self, query, k, limit=DEFAULT_RRF_SEARCH_LIMIT, debug=False):
+    def rrf_search(self, query, k=DEFAULT_RRF_K, limit=DEFAULT_RRF_SEARCH_LIMIT, debug=False):
+        true_debug = debug
         if debug == True:
             print(f"DEBUG: Original query: {query}")
         bm25_results = self._bm25_search(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER, debug)
         css_results = self.semantic_search.search_chunk(query, limit * DEFAULT_LARGE_SEARCH_MULTIPLIER, debug)
         combined_scores = {}
 
-        for rank, result in enumerate(bm25_results):
+        for bm25_rank, result in enumerate(bm25_results, 1):
             doc_id = result['id']
             if doc_id not in combined_scores:
+                if debug:
+                    print(f"DEBUG: BM25: Adding title {result['title']} to combined scores with a bm25 score of {bm25_rank}")
                 combined_scores[doc_id] = {
                     'title': result['title'],
                     'document': result['document'],
@@ -243,12 +246,23 @@ class HybridSearch:
                     'semantic_rank': None,
                 }
             if combined_scores[doc_id]['bm25_rank'] is None:
-                combined_scores[doc_id]['bm25_rank'] = rank
-                combined_scores[doc_id]['rrf_score'] += rrf_score(rank, k)
-            
-        for rank, result in enumerate(css_results):
+                combined_scores[doc_id]['bm25_rank'] = bm25_rank
+                combined_scores[doc_id]['rrf_score'] += rrf_score(bm25_rank, k)
+                if debug:
+                    print(f"DEBUG: BM25: title {combined_scores[doc_id]['title']} with a bm25 rank of {bm25_rank} and an rrf score of {rrf_score(bm25_rank, k)}")
+                    print(f"DEBUG: BM25: semantic rank for title is currently {combined_scores[doc_id]['semantic_rank']}")
+                    kg = input("Press Enter to continue...")
+                    if kg:
+                        debug = False
+        debug = true_debug
+        for css_rank, result in enumerate(css_results, 1):
             doc_id = result['id']
+            if debug:
+                print(f"DEBUG: CSS: result {result['title']}, rank {css_rank}")
+                print(f"DEBUG: CSS: document id is {doc_id}")
             if doc_id not in combined_scores:
+                if debug: 
+                    print(f"DEBUG: Doc ID not in combined scores.")
                 combined_scores[doc_id] = {
                     'title': result['title'],
                     'document': result['document'],
@@ -256,16 +270,33 @@ class HybridSearch:
                     'bm25_rank': None,
                     'semantic_rank': None,
                 }
+            else:
+                if debug:
+                    print(f"DEBUG: CSS: document {doc_id} in combined scores. Should correspond to: {combined_scores[doc_id]}")
             if combined_scores[doc_id]['semantic_rank'] is None:
-                combined_scores[doc_id]['semantic_rank'] = rank
-                combined_scores[doc_id]['rrf_score'] += rrf_score(rank, k)
-        
+                combined_scores[doc_id]['semantic_rank'] = css_rank
+                if debug:
+                    print(f"DEBUG: CSS: title {combined_scores[doc_id]['title']} with a CSS rank of {css_rank} and a current rrf of {combined_scores[doc_id]['rrf_score']}, adding {rrf_score(css_rank, k)}")
+                    kg = input("Press Enter to continue...")
+                    if kg:
+                        debug = False
+                combined_scores[doc_id]['rrf_score'] += rrf_score(css_rank, k)
+
+        sorted_items = sorted(combined_scores.items(), key=lambda x: x[1]['rrf_score'], reverse=True)
+        debug = true_debug
         rrf_results = []
-        for doc_id, data in combined_scores.items():
-            result = format_search_result(doc_id, data['title'], data['document'], 
+        for doc_id, data in sorted_items:
+            result = format_search_result(doc_id, data['title'], data['document'][:RETURN_DOCUMENT_LIMIT], 
                                           data['rrf_score'], rrf_score=data['rrf_score'], 
                                           bm25_rank=data['bm25_rank'], semantic_rank=data['semantic_rank'])
+            if debug:
+                print(f"DEBUG: rrf search result: {result}")
+                kg = input("Press Enter to continue...")
+                if kg:
+                    debug = False
             rrf_results.append(result)
         
-        return sorted(rrf_results, key=lambda x: x["score"], reverse=True)
+            
+        return rrf_results
+        #return sorted(rrf_results, key=lambda x: x["score"], reverse=True)
     

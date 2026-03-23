@@ -244,8 +244,7 @@ class ChunkedSemanticSearch(SemanticSearch):
             if (movie_index not in movie_score_map or movie_score_map[movie_index] < chunk_score['score']):
                 movie_score_map[movie_index] = chunk_score['score']
         sorted_movies = sorted(movie_score_map.items(), key=lambda item: item[1], reverse=True)
-        if debug == True:
-            print(f"DEBUG: sorted movies from chunked search: {sorted_movies[:limit]}")
+        
         sorted_scores = []
         #CH9.4 more cleanup. 
         for d, score in sorted_movies[:limit]:
@@ -254,6 +253,11 @@ class ChunkedSemanticSearch(SemanticSearch):
             
             doc = self.documents[d]
             #print(doc)
-            sorted_scores.append(format_search_result(d, doc['title'], doc['description'][:RETURN_DOCUMENT_LIMIT], score))
-            
+            individual_score = format_search_result(doc['id'], doc['title'], doc['description'][:RETURN_DOCUMENT_LIMIT], score)
+            if debug: 
+                print(f"DEBUG: chunked score {individual_score}")
+                kg = input("Press Enter to continue...")
+                if kg:
+                    debug = False
+            sorted_scores.append(individual_score)
         return sorted_scores
