@@ -20,7 +20,8 @@ def llm_action(prompt):
 def initial_rrf(query, limit=DEFAULT_SEARCH_LIMIT):
     search_docs = load_movies()
     hs = HybridSearch(search_docs)
-    rrf_results = hs.rrf_search(query, limit)
+    rrf_results = hs.rrf_search(query, limit=limit)
+    #print(f"DEBUG: RRF Results: {rrf_results[:limit]}")
     return rrf_results
 
 def rrf_joiner(rrf_results, limit=DEFAULT_SEARCH_LIMIT):
@@ -32,7 +33,7 @@ def rrf_joiner(rrf_results, limit=DEFAULT_SEARCH_LIMIT):
 def rag_cmd(query):
     rrf_results = initial_rrf(query)
     rag_string = rrf_joiner(rrf_results)
-
+    
     prompt = f"""Answer the question or provide information based on the provided documents. This should be tailored to Hoopla users. Hoopla is a movie streaming service.
 
         Query: {query}
@@ -77,3 +78,36 @@ def summarize_cmd(query, limit=DEFAULT_SEARCH_LIMIT):
     print()
     print('LLM Summary:')
     print(f'"{sum_answer}"')
+
+def citations_cmd(query, limit=DEFAULT_SEARCH_LIMIT):
+    rrf_results = initial_rrf(query, limit)
+    cite_string = rrf_joiner(rrf_results, limit)
+
+    prompt = f"""Answer the query below and give information based on the provided documents.
+
+    The answer should be tailored to users of Hoopla, a movie streaming service.
+    If not enough information is available to provide a good answer, say so, but give the best answer possible while citing the sources available.
+
+    Query: {query}
+
+    Documents:
+    {cite_string}
+
+    Instructions:
+    - Provide a comprehensive answer that addresses the query
+    - Cite sources in the format [1], [2], etc. when referencing information
+    - If sources disagree, mention the different viewpoints
+    - If the answer isn't in the provided documents, say "I don't have enough information"
+    - Be direct and informative
+
+    Answer:"""
+    #print(f"DEBUG: PROMPT: \n\n{prompt}\n\n")
+    response = llm_action(prompt)
+    cite_answer = (response.text or "").strip()
+
+    print('Search results:')
+    for result in rrf_results[:DEFAULT_SEARCH_LIMIT]:
+        print(f'  - {result["title"]}')
+    print()
+    print('LLM Answer:')
+    print(f'"{cite_answer}"')
