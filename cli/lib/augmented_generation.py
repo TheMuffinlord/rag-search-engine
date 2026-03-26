@@ -26,8 +26,9 @@ def initial_rrf(query, limit=DEFAULT_SEARCH_LIMIT):
 
 def rrf_joiner(rrf_results, limit=DEFAULT_SEARCH_LIMIT):
     docs_list = []
-    for result in rrf_results[:limit]:
-        docs_list.append(f"{result['title']} - {result['document'][:200]}\n")
+    for result in rrf_results[:limit]:            
+        docs_list.append(f"{result['title']} - {result['document'][:1000]}\n")
+        #print(f"DEBUG: TITLE: {result['title']} DESCRIPTION: {result['document'][:1000]}")
     return "\n".join(docs_list)
 
 def rag_cmd(query):
@@ -111,3 +112,33 @@ def citations_cmd(query, limit=DEFAULT_SEARCH_LIMIT):
     print()
     print('LLM Answer:')
     print(f'"{cite_answer}"')
+
+
+def question_cmd(query, limit=DEFAULT_SEARCH_LIMIT):
+    rrf_results = initial_rrf(query, limit)
+    question_str = rrf_joiner(rrf_results, limit)
+
+    prompt = f"""Answer the user's question based on the provided movies that are available on Hoopla, a streaming service.
+
+        Question: {query}
+
+        Documents:
+        {question_str}
+
+        Instructions:
+        - Answer questions directly and concisely
+        - Be casual and conversational
+        - Don't be cringe or hype-y
+        - Talk like a normal person would in a chat conversation
+
+        Answer:"""
+    
+    response = llm_action(prompt)
+    q_answer = (response.text or "").strip()
+
+    print('Search results:')
+    for result in rrf_results[:DEFAULT_SEARCH_LIMIT]:
+        print(f'  - {result["title"]}')
+    print()
+    print('LLM Answer:')
+    print(f'"{q_answer}"')

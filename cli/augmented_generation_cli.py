@@ -1,6 +1,6 @@
 import argparse
 
-from lib.augmented_generation import rag_cmd, summarize_cmd, citations_cmd
+from lib.augmented_generation import rag_cmd, summarize_cmd, citations_cmd, question_cmd
 from lib.constants import DEFAULT_SEARCH_LIMIT
 
 def main():
@@ -20,6 +20,10 @@ def main():
     cite_parser.add_argument('query', type=str, help='query to needful')
     cite_parser.add_argument('--limit', type=int, default=DEFAULT_SEARCH_LIMIT, help='optional limit parameter')
 
+    question_parser = subparsers.add_parser('question', help="phrase your mush brain search as a question. I guess.")
+    question_parser.add_argument('query', type=str, help='query to needful')
+    question_parser.add_argument('--limit', type=int, default=DEFAULT_SEARCH_LIMIT, help='optional limit parameter')
+
 
     args = parser.parse_args()
 
@@ -35,6 +39,10 @@ def main():
             query = args.query
             limit = args.limit
             citations_cmd(query, limit)
+        case 'question':
+            query = args.query
+            limit = args.limit
+            question_cmd(query, limit)
         case _:
             parser.print_help()
 
